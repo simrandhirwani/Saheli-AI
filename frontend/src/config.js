@@ -6,4 +6,7 @@ export const API_BASE_URL = 'https://saheli-ai.onrender.com';
 
 export const WS_BASE_URL = isLocal 
   ? 'ws://localhost:8000' 
-  : 'https://saheli-ai.onrender.com'; // Notice the secure 'wss' protocol for production
+  : 'https://saheli-ai.onrender.com';
+   "wss://saheli-ai.onrender.com"; // Notice the secure 'wss' protocol for production
+
+

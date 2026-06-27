@@ -14,10 +14,14 @@ load_dotenv()
 
 app = FastAPI()
 
-# 1. FIXED CORS MATRIX (allow_headers instead of allow_items)
+PRODUCTION_ORIGINS = [
+    "http://localhost:5173",
+    "https://saheli-ai-psi.vercel.app/",  # TODO: Put your exact Vercel app URL here
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","https://saheli-ai.onrender.com","*"], 
+    allow_origins=PRODUCTION_ORIGINS, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"], 
@@ -149,28 +153,31 @@ async def get_transient_logs(session_id: str):
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
     audio_buffer = bytearray()
+    print(f"WebSocket Connected Session: {session_id}")
     
     try:
         while True:
             data = await websocket.receive_bytes()
             audio_buffer.extend(data)
             
+            # Process block once threshold capacity reached
             if len(audio_buffer) >= 48000:
-                temp_filename = f"temp_{session_id}.webm"
-                with open(temp_filename, "wb") as f:
-                    f.write(audio_buffer)
-                
                 try:
-                    with open(temp_filename, "rb") as audio_file:
-                        transcription = groq_client.audio.transcriptions.create(
-                            file=audio_file,
-                            model="whisper-large-v3",
-                            response_format="text"
-                        )
+                    # FIX: Read memory as an isolated, valid virtual file stream object
+                    # This completely avoids read/write permission errors on Render containers
+                    audio_stream = io.BytesIO(audio_buffer)
+                    audio_stream.name = "audio_telemetry.webm"  # Whisper requires an explicit extension signature
+                    
+                    transcription = groq_client.audio.transcriptions.create(
+                        file=audio_stream,
+                        model="whisper-large-v3",
+                        response_format="text"
+                    )
                     
                     if transcription.strip():
                         timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
                         
+                        # Persist telemetry records into the Neon instance
                         conn = get_db_connection()
                         cursor = conn.cursor()
                         insert_query = """
@@ -190,13 +197,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             }
                         })
                 except Exception as e:
-                    print(f"Transcription error loop: {e}")
+                    print(f"Production Processing Exception Tracker: {e}")
                 finally:
-                    if os.path.exists(temp_filename):
-                        os.remove(temp_filename)
-                
-                audio_buffer.clear()
-                
+                    audio_buffer.clear()
+                    
     except WebSocketDisconnect:
         print(f"Session disconnected cleanly: {session_id}")
 
