@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Shield, AlertTriangle, Plus, Trash2, User, Smartphone, Activity } from 'lucide-react';
 import { useLanguage } from '../App';
-import { API_BASE_URL, WS_BASE_URL } from '../config';
+import { API_BASE_URL } from '../config';
 
 export default function SafeMode() {
   const { lang } = useLanguage();
@@ -69,7 +69,6 @@ export default function SafeMode() {
 
   // FETCH PERSISTED 1-HOUR LOGS FROM NEON ON MOUNT
   useEffect(() => {
-    // UPDATED: Using API_BASE_URL
     fetch(`${API_BASE_URL}/api/safemode/logs/${sessionId}`)
       .then(res => res.json())
       .then(data => {
@@ -87,8 +86,9 @@ export default function SafeMode() {
   const startStreamingEngine = async () => {
     setSystemLog("Connecting to secure backend sockets...");
     
-    // UPDATED: Using WS_BASE_URL
-    const ws = new WebSocket(`${WS_BASE_URL}/ws/safemode/${sessionId}`);
+    // DYNAMIC WEBSOCKET URL FIX
+    const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsBaseUrl}/ws/safemode/${sessionId}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -176,9 +176,7 @@ export default function SafeMode() {
       )}
 
       {/* HEADER */}
-      {/* UPDATED: Removed sm:text-left to force center alignment on all screen sizes */}
       <div className="text-center border-b border-slate-200 pb-6">
-        {/* UPDATED: Removed sm:justify-start */}
         <h1 className="text-3xl font-black text-slate-900 font-serif tracking-tight flex items-center justify-center gap-2">
           <Shield className="text-rose-500" size={28} /> {currentContent.title}
         </h1>

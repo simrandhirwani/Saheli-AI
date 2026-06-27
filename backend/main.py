@@ -8,6 +8,7 @@ from typing import List, Dict
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from groq import Groq
+from typing import List
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ app = FastAPI()
 # 1. FIXED CORS MATRIX (allow_headers instead of allow_items)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], 
+    allow_origins=["http://localhost:5173","https://saheli-ai.onrender.com","*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"], 
@@ -198,3 +199,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 
     except WebSocketDisconnect:
         print(f"Session disconnected cleanly: {session_id}")
+
+milestones_db = []
+
+@app.get("/api/pehchaan/milestones", response_model=List[Milestone])
+async def get_milestones():
+    return milestones_db
+
+@app.post("/api/pehchaan/milestones")
+async def add_milestone(milestone: Milestone):
+    # Insert new milestones at the front of the list so they appear at the top of the feed
+    milestones_db.insert(0, milestone)
+    return {"status": "success", "message": "Milestone successfully broadcasted"}

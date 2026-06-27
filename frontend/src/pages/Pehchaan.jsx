@@ -27,6 +27,15 @@ export default function Pehchaan() {
   };
   const localizedCities = cityLabels[lang] || cityLabels['en'];
 
+  // THE CRITICAL FIX: Like & Heart Toggle Handler
+  const handleToggleLike = (id, type) => {
+    if (type === 'story') {
+      setLikedStories(prev => ({ ...prev, [id]: !prev[id] }));
+    } else if (type === 'celebration') {
+      setCelebrationHearts(prev => ({ ...prev, [id]: !prev[id] }));
+    }
+  };
+
   // COMPLETE LOCALIZED TRANSLATIONS FOR ALL CHANNELS
   const dataBundle = {
     en: {
@@ -53,13 +62,13 @@ export default function Pehchaan() {
         { id: 9, author: "Brave Survivor", city: "Other Cities", duration: "Global Hub", quote: "Even outside core cities, the global network matched me with an online legal companion instantly." }
       ],
       helpers: [
-        { name: "Meena Ben", city: "Ahmedabad", type: "Neighborhood Helper", badge: "Vouched", desc: "Specializing in local safe emergency shelter placements and support." },
-        { name: "Bhanu Priya", city: "Ahmedabad", type: "Livelihood Mentor", badge: "Vouched", desc: "Connecting survivors to local micro-credit clusters and skill development circles." },
-        { name: "Adv. Jignasa", city: "Surat", type: "Legal Counsel", badge: "Professional", desc: "Stridhan recovery procedures tracking and protection order filing arrays." },
-        { name: "Adv. Anjali Sharma", city: "Mumbai", type: "Legal Advocate", badge: "Professional", desc: "Free legal evaluation mapping under IPC 498A and family protection laws." },
-        { name: "Savitri Devi", city: "Delhi", type: "Community Coordinator", badge: "Vouched", desc: "Accompanying women safely to local police desks and documentation circles." },
-        { name: "Dr. Rohini Pune", city: "Pune", type: "Medical Volunteer", badge: "Professional", desc: "Providing dynamic health assessments and secure institutional logs mapping." },
-        { name: "Global Legal Aid", city: "Other Cities", type: "Advocate Array", badge: "Professional", desc: "Remote video consulting for any sub-jurisdiction legal framework matching." }
+        { name: "Meena Ben", city: "Ahmedabad", type: "Neighborhood Helper", badge: "Vouched", desc: "Specializing in local safe emergency shelter placements and support.", phone: "Hidden", email: "Contact via App" },
+        { name: "Bhanu Priya", city: "Ahmedabad", type: "Livelihood Mentor", badge: "Vouched", desc: "Connecting survivors to local micro-credit clusters and skill development circles.", phone: "Hidden", email: "Contact via App" },
+        { name: "Adv. Jignasa", city: "Surat", type: "Legal Counsel", badge: "Professional", desc: "Stridhan recovery procedures tracking and protection order filing arrays.", phone: "Hidden", email: "Contact via App" },
+        { name: "Adv. Anjali Sharma", city: "Mumbai", type: "Legal Advocate", badge: "Professional", desc: "Free legal evaluation mapping under IPC 498A and family protection laws.", phone: "Hidden", email: "Contact via App" },
+        { name: "Savitri Devi", city: "Delhi", type: "Community Coordinator", badge: "Vouched", desc: "Accompanying women safely to local police desks and documentation circles.", phone: "Hidden", email: "Contact via App" },
+        { name: "Dr. Rohini Pune", city: "Pune", type: "Medical Volunteer", badge: "Professional", desc: "Providing dynamic health assessments and secure institutional logs mapping.", phone: "Hidden", email: "Contact via App" },
+        { name: "Global Legal Aid", city: "Other Cities", type: "Advocate Array", badge: "Professional", desc: "Remote video consulting for any sub-jurisdiction legal framework matching.", phone: "Hidden", email: "Contact via App" }
       ],
       celebrations: [
         { id: 1, user: "@brave_today", city: "Ahmedabad", text: "I filed my FIR today! The officers took the text printout seriously immediately.", time: "2 hours ago" },
@@ -95,13 +104,13 @@ export default function Pehchaan() {
         { id: 9, author: "बहादुर उत्तरजीवी", city: "Other Cities", duration: "वैश्विक हब", quote: "मुख्य शहरों से बाहर होने पर भी, वैश्विक नेटवर्क ने मुझे तुरंत एक ऑनलाइन कानूनी साथी से जोड़ दिया।" }
       ],
       helpers: [
-        { name: "मीना बेन", city: "Ahmedabad", type: "पड़ोस सहायक", badge: "सत्यापित", desc: "स्थानीय सुरक्षित आपातकालीन आश्रय व्यवस्था और तत्काल सहायता में विशेषज्ञ।" },
-        { name: "भानु प्रिया", city: "Ahmedabad", type: "आजीविका मेंटर", badge: "सत्यापित", desc: "महिलाओं को स्थानीय लघु ऋण समूहों और कौशल विकास केंद्रों से जोड़ना।" },
-        { name: "एडवोकेट जिज्ञासा", city: "Surat", type: "कानूनी सलाहकार", badge: "प्रोफेशनल", desc: "स्त्रीधन वसूली प्रक्रियाओं और सुरक्षा आदेश फाइलिंग की ट्रैकिंग।" },
-        { name: "एडवोकेट अंजली शर्मा", city: "Mumbai", type: "कानूनी अधिवक्ता", badge: "प्रोफेशनल", desc: "IPC 498A और पारिवारिक संरक्षण कानूनों के तहत मुफ्त कानूनी मूल्यांकन।" },
-        { name: "सावित्री देवी", city: "Delhi", type: "कम्युनिटी समन्वयक", badge: "सत्यापित", desc: "स्थानीय थानों और कानूनी कागजी कार्रवाई में महिलाओं के साथ खड़े रहना।" },
-        { name: "डॉ. रोहिणी पुणे", city: "Pune", type: "चिकित्सा स्वयंसेवक", badge: "प्रोफेशनल", desc: "चिकित्सीय सहायता और कानूनी साक्ष्य के लिए मेडिकल रिपोर्ट तैयार करना।" },
-        { name: "वैश्विक कानूनी सहायता", city: "Other Cities", type: "अधिवक्ता नेटवर्क", badge: "प्रोफेशनल", desc: "किसी भी क्षेत्र के कानूनी ढांचे के मिलान के लिए रिमोट वीडियो परामर्श।" }
+        { name: "मीना बेन", city: "Ahmedabad", type: "पड़ोस सहायक", badge: "सत्यापित", desc: "स्थानीय सुरक्षित आपातकालीन आश्रय व्यवस्था और तत्काल सहायता में विशेषज्ञ।", phone: "Hidden", email: "Contact via App" },
+        { name: "भानु प्रिया", city: "Ahmedabad", type: "आजीविका मेंटर", badge: "सत्यापित", desc: "महिलाओं को स्थानीय लघु ऋण समूहों और कौशल विकास केंद्रों से जोड़ना।", phone: "Hidden", email: "Contact via App" },
+        { name: "एडवोकेट जिज्ञासा", city: "Surat", type: "कानूनी सलाहकार", badge: "प्रोफेशनल", desc: "स्त्रीधन वसूली प्रक्रियाओं और सुरक्षा आदेश फाइलिंग की ट्रैकिंग।", phone: "Hidden", email: "Contact via App" },
+        { name: "एडवोकेट अंजली शर्मा", city: "Mumbai", type: "कानूनी अधिवक्ता", badge: "प्रोफेशनल", desc: "IPC 498A और पारिवारिक संरक्षण कानूनों के तहत मुफ्त कानूनी मूल्यांकन।", phone: "Hidden", email: "Contact via App" },
+        { name: "सावित्री देवी", city: "Delhi", type: "कम्युनिटी समन्वयक", badge: "सत्यापित", desc: "स्थानीय थानों और कानूनी कागजी कार्रवाई में महिलाओं के साथ खड़े रहना।", phone: "Hidden", email: "Contact via App" },
+        { name: "डॉ. रोहिणी पुणे", city: "Pune", type: "चिकित्सा स्वयंसेवक", badge: "प्रोफेशनल", desc: "चिकित्सीय सहायता और कानूनी साक्ष्य के लिए मेडिकल रिपोर्ट तैयार करना।", phone: "Hidden", email: "Contact via App" },
+        { name: "वैश्विक कानूनी सहायता", city: "Other Cities", type: "अधिवक्ता नेटवर्क", badge: "प्रोफेशनल", desc: "किसी भी क्षेत्र के कानूनी ढांचे के मिलान के लिए रिमोट वीडियो परामर्श।", phone: "Hidden", email: "Contact via App" }
       ],
       celebrations: [
         { id: 1, user: "@brave_today", city: "Ahmedabad", text: "मैंने आज आधिकारिक तौर पर अपनी एफआईआर दर्ज करा दी! पुलिस ने ड्राफ्ट को तुरंत गंभीरता से लिया।", time: "2 घंटे पहले" },
@@ -131,19 +140,19 @@ export default function Pehchaan() {
         { id: 3, author: "અસ્મિતા જે.", city: "Ahmedabad", duration: "5 મહિના મુક્ત", quote: "વેરિફાઇડ મદદગારો મારી સાથે સ્થાનિક પોલીસ સ્ટેશન ગયા. તેમની હાજરીએ આખો કેસ બદલી નાખ્યો." },
         { id: 4, author: "અનન્યા આર.", city: "Surat", duration: "6 મહિના મુક્ત", quote: "આ જ કાનૂની પ્રક્રિયામાંથી પસાર થયેલી ત્રણ પડોશી મહિલાઓ મળતા મારો એકલવાયો ડર તરત જ દૂર થઈ ગયો." },
         { id: 5, author: "ભાવના ટી.", city: "Surat", duration: "11 મહિના મુક્ત", quote: "મુશ્કેલ સંજોગોમાં સ્થાનિક સુરક્ષા નેટવર્ક હંમેશા મારી સાથે મજબૂતીથી ઊભું રહ્યું." },
-        { id: 6, author: "કિરણ કે.", city: "Mumbai", duration: "2 વર્ષ મુક્ત", quote: "મારી મિલકત आणि કાનૂની અધિકારો પાછા મેળવવાથી મને ગૌરવ સાથે જીવવાની પ્રેરણા મળી." },
+        { id: 6, author: "કિરણ કે.", city: "Mumbai", duration: "2 વર્ષ મુક્ત", quote: "મારી મિલકત અને કાનૂની અધિકારો પાછા મેળવવાથી મને ગૌરવ સાથે જીવવાની પ્રેરણા મળી." },
         { id: 7, author: "મેઘા એમ.", city: "Delhi", duration: "12 મહિના મુક્ત", quote: "સુવ્યવસ્થિત પોલીસ-રેડી ડ્રાફ્ટના કારણે સ્થાનિક ડેસ્ક પર કલાકોમાં જ એફઆઈઆર સ્વીકારવામાં આવી." },
         { id: 8, author: "સુનીતા બી.", city: "Pune", duration: "9 મહિના મુક્ત", quote: "સાથી બહેનોના આશ્રય સહયોગથી, હું સુરક્ષિત રીતે સ્થળાંતરિત થઈ અને આઠ મહિનામાં પગભર બની શકી." },
         { id: 9, author: "બહાદુર બહેન", city: "Other Cities", duration: "વૈશ્વિક હબ", quote: "મુખ્ય શહેરોની બહાર હોવા છતાં, વૈશ્વિક નેટવર્કે મને તરત જ ઓનલાઈન કાનૂની સાથીદાર સાથે જોડી દીધી." }
       ],
       helpers: [
-        { name: "મીના બેન", city: "Ahmedabad", type: "સ્થાનિક મદદગાર", badge: "વેરિફાઇડ", desc: "સ્થાનિક સુરક્ષિત કટોકટી આશ્રય સ્થાનો અને તાત્કાલિક સહાયતામાં વિશેષતા." },
-        { name: "ભાનુ પ્રિયા", city: "Ahmedabad", type: "આજીવિકા માર્ગદર્શક", badge: "વેરિફાઇડ", desc: "મહિલાઓને સ્થાનિક માઇક્રો-ક્રેડિટ જૂથો અને કૌશલ્ય વિકાસ વર્ગો સાથે જોડવા." },
-        { name: "એડવોકેટ જીજ્ઞાસા", city: "Surat", type: "કાનૂની સલાહકાર", badge: "પ્રોફેશનલ", desc: "સ્ત્રીધન વસૂલાત પ્રક્રિયાઓ અને પ્રોટેક્શન ઓર્ડર ફાઇલિંગનું વેરિફિકેશન." },
-        { name: "એડવોકેટ અંજલી શર્મા", city: "Mumbai", type: "કાનૂની એડવોકેટ", badge: "પ્રોફેશનલ", desc: "IPC 498A અને ઘરેલું હિંસા કાયદા હેઠળ મફત કાનૂની માર્ગદર્શન." },
-        { name: "સાવિત્રી દેવી", city: "Delhi", type: "કમ્યુનિટી કોઓર્ડિનેટર", badge: "વેરિફાઇડ", desc: "સ્થાનિક પોલીસ સ્ટેશનો અને કાગળની કામગીરીમાં બહેનોને સાથ આપવો." },
-        { name: "ડો. રોહિણી પુણે", city: "Pune", type: "તબીબી સ્વયંસેવક", badge: "પ્રોફેશનલ", desc: "તબીબી મૂલ્યાંકન અને કાનૂની પુરાવા માટે મેડિકલ રિપોર્ટ તૈયાર કરવા." },
-        { name: "વૈશ્વિક કાનૂની સહાય", city: "Other Cities", type: "એડવોકેટ નેટવર્ક", badge: "પ્રોફેશનલ", desc: "કોઈપણ પ્રાદેશિક કાનૂની માળખાના વિશ્લેષણ માટે વિડીયો કાઉન્સિલિંગ." }
+        { name: "મીના બેન", city: "Ahmedabad", type: "સ્થાનિક મદદગાર", badge: "વેરિફાઇડ", desc: "સ્થાનિક સુરક્ષિત કટોકટી આશ્રય સ્થાનો અને તાત્કાલિક સહાયતામાં વિશેષતા.", phone: "Hidden", email: "Contact via App" },
+        { name: "ભાનુ પ્રિયા", city: "Ahmedabad", type: "આજીવિકા માર્ગદર્શક", badge: "વેરિફાઇડ", desc: "મહિલાઓને સ્થાનિક માઇક્રો-ક્રેડિટ જૂથો અને કૌશલ્ય વિકાસ વર્ગો સાથે જોડવા.", phone: "Hidden", email: "Contact via App" },
+        { name: "એડવોકેટ જીજ્ઞાસા", city: "Surat", type: "કાનૂની સલાહકાર", badge: "પ્રોફેશનલ", desc: "સ્ત્રીધન વસૂલાત પ્રક્રિયાઓ અને પ્રોટેક્શન ઓર્ડર ફાઇલિંગનું વેરિફિકેશન.", phone: "Hidden", email: "Contact via App" },
+        { name: "એડવોકેટ અંજલી શર્મા", city: "Mumbai", type: "કાનૂની એડવોકેટ", badge: "પ્રોફેશનલ", desc: "IPC 498A અને ઘરેલું હિંસા કાયદા હેઠળ મફત કાનૂની માર્ગદર્શન.", phone: "Hidden", email: "Contact via App" },
+        { name: "સાવિત્રી દેવી", city: "Delhi", type: "કમ્યુનિટી કોઓર્ડિનેટર", badge: "વેરિફાઇડ", desc: "સ્થાનિક પોલીસ સ્ટેશનો અને કાગળની કામગીરીમાં બહેનોને સાથ આપવો.", phone: "Hidden", email: "Contact via App" },
+        { name: "ડો. રોહિણી પુણે", city: "Pune", type: "તબીબી સ્વયંસેવક", badge: "પ્રોફેશનલ", desc: "તબીબી મૂલ્યાંકન અને કાનૂની પુરાવા માટે મેડિકલ રિપોર્ટ તૈયાર કરવા.", phone: "Hidden", email: "Contact via App" },
+        { name: "વૈશ્વિક કાનૂની સહાય", city: "Other Cities", type: "એડવોકેટ નેટવર્ક", badge: "પ્રોફેશનલ", desc: "કોઈપણ પ્રાદેશિક કાનૂની માળખાના વિશ્લેષણ માટે વિડીયો કાઉન્સિલિંગ.", phone: "Hidden", email: "Contact via App" }
       ],
       celebrations: [
         { id: 1, user: "@brave_today", city: "Ahmedabad", text: "મેં આજે સત્તાવાર રીતે એફઆઈઆર દાખલ કરી! અધિકારીઓએ પ્રિન્ટઆઉટ ડ્રાફ્ટને તરત જ ગંભીરતાથી લીધો.", time: "2 કલાક પહેલા" },
@@ -179,13 +188,13 @@ export default function Pehchaan() {
         { id: 9, author: "बहादूर महिला", city: "Other Cities", duration: "वैश्विक हब", quote: "मुख्य शहरांच्या बाहेर असूनही, जागतिक नेटवर्कने मला त्वरित ऑनलाइन कायदेशीर मदतनीसाशी जोडले." }
       ],
       helpers: [
-        { name: "मीना बेन", city: "Ahmedabad", type: "शेजारी मदतनीस", badge: "सत्यापित", desc: "स्थानिक सुरक्षित आपत्कालीन आश्रय व्यवस्था और त्वरित साहाय्यामध्ये तज्ज्ञ." },
-        { name: "भानु प्रिया", city: "Ahmedabad", type: "उपजीविका मार्गदर्शक", badge: "सत्यापित", desc: "महिलांना स्थानिक बचत गट आणि कौशल्य विकास केंद्रांशी जोडणे." },
-        { name: "एडव्होकेट जिज्ञासा", city: "Surat", type: "कायदेशीर सल्लागार", badge: "प्रोफेशनल", desc: "स्त्रीधन वसुली प्रक्रिया आणि संरक्षण आदेश फाइलिंगचे योग्य ट्रॅकिंग." },
-        { name: "एडव्होकेट अंजली शर्मा", city: "Mumbai", type: "कायदेशीर वकील", badge: "प्रोफेशनल", desc: "IPC 498A आणि कौटुंबिक संरक्षण कायद्यांतर्गत विनामूल्य कायदेशीर मसुदा मसुदा मूल्यमापन." },
-        { name: "सावित्री देवी", city: "Delhi", type: "कम्युनिटी समन्वयक", badge: "सत्यापित", desc: "स्थानिक पोलीस ठाण्यात जाण्यासाठी आणि कागदपत्रांच्या कामात मदत करणे." },
-        { name: "डॉ. रोहिणी पुणे", city: "Pune", type: "वैद्यकीय स्वयंसेवक", badge: "प्रोफेशनल", desc: "वैद्यकीय साहाय्य आणि कायदेशीर पुराव्यासाठी मेडिकल रिपोर्ट तैयार करणे." },
-        { name: "वैश्विक कायदेशीर मदत", city: "Other Cities", type: "अधिवक्ता नेटवर्क", badge: "प्रोफेशनल", desc: "दूरस्थ भागातील महिलांसाठी व्हिडिओद्वारे कायदेशीर कायदे सल्ला मार्गदर्शन." }
+        { name: "मीना बेन", city: "Ahmedabad", type: "शेजारी मदतनीस", badge: "सत्यापित", desc: "स्थानिक सुरक्षित आपत्कालीन आश्रय व्यवस्था और त्वरित साहाय्यामध्ये तज्ज्ञ.", phone: "Hidden", email: "Contact via App" },
+        { name: "भानु प्रिया", city: "Ahmedabad", type: "उपजीविका मार्गदर्शक", badge: "सत्यापित", desc: "महिलांना स्थानिक बचत गट आणि कौशल्य विकास केंद्रांशी जोडणे.", phone: "Hidden", email: "Contact via App" },
+        { name: "एडव्होकेट जिज्ञासा", city: "Surat", type: "कायदेशीर सल्लागार", badge: "प्रोफेशनल", desc: "स्त्रीधन वसुली प्रक्रिया आणि संरक्षण आदेश फाइलिंगचे योग्य ट्रॅकिंग.", phone: "Hidden", email: "Contact via App" },
+        { name: "एडव्होकेट अंजली शर्मा", city: "Mumbai", type: "कायदेशीर वकील", badge: "प्रोफेशनल", desc: "IPC 498A आणि कौटुंबिक संरक्षण कायद्यांतर्गत विनामूल्य कायदेशीर मसुदा मसुदा मूल्यमापन.", phone: "Hidden", email: "Contact via App" },
+        { name: "सावित्री देवी", city: "Delhi", type: "कम्युनिटी समन्वयक", badge: "सत्यापित", desc: "स्थानिक पोलीस ठाण्यात जाण्यासाठी आणि कागदपत्रांच्या कामात मदत करणे.", phone: "Hidden", email: "Contact via App" },
+        { name: "डॉ. रोहिणी पुणे", city: "Pune", type: "वैद्यकीय स्वयंसेवक", badge: "प्रोफेशनल", desc: "वैद्यकीय साहाय्य आणि कायदेशीर पुराव्यासाठी मेडिकल रिपोर्ट तैयार करणे.", phone: "Hidden", email: "Contact via App" },
+        { name: "वैश्विक कायदेशीर मदत", city: "Other Cities", type: "अधिवक्ता नेटवर्क", badge: "प्रोफेशनल", desc: "दूरस्थ भागातील महिलांसाठी व्हिडिओद्वारे कायदेशीर कायदे सल्ला मार्गदर्शन.", phone: "Hidden", email: "Contact via App" }
       ],
       celebrations: [
         { id: 1, user: "@brave_today", city: "Ahmedabad", text: "मी आज पोलीस ठाण्यात माझी एफआयआर दाखल केली! अधिकाऱ्यांनी दस्तऐवज प्रिंटआउट त्वरित गांभीर्याने घेतला.", time: "2 तासांपूर्वी" },
@@ -368,7 +377,7 @@ export default function Pehchaan() {
                     </span>
                   </div>
                 </div>
-              )) // FIXED: Removed curly bracket mismatch
+              ))
             )}
           </div>
         </div>

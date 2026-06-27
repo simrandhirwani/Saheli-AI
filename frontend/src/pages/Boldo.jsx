@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, ShieldAlert, AlertTriangle, FileText, Download, Trash2, ArrowRight, CheckCircle2, Square, Loader2, ArrowLeft, Keyboard, HelpCircle, Quote } from 'lucide-react';
 import { useLanguage } from '../App';
-import { API_BASE_URL, WS_BASE_URL } from '../config';
-import { jsPDF } from 'jspdf'; // Client-side generation engine
+import { API_BASE_URL } from '../config'; // Removed WS_BASE_URL
+import { jsPDF } from 'jspdf'; 
 
 export default function Boldo() {
   const { lang } = useLanguage();
@@ -151,7 +151,10 @@ export default function Boldo() {
   // FULL STREAMING WEBSOCKET CONNECTIONS (WHISPER API PIPELINE INTEGRATION)
   const startStreamingAudio = async () => {
     setTranscript("");
-    const ws = new WebSocket(`${WS_BASE_URL}/ws/safemode/${sessionId}`);
+    
+    // DYNAMIC WEBSOCKET URL FIX
+    const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsBaseUrl}/ws/safemode/${sessionId}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -193,7 +196,6 @@ export default function Boldo() {
 
     // AI Logical Framework Report Generator Integration Mapping Callouts
     setTimeout(() => {
-      // FIXED BUG: Using robust fallback parsing matching manual input hooks
       const effectiveName = userName && userName.trim() ? userName.trim() : "[Victim Name]";
       
       setLegalDraft(
