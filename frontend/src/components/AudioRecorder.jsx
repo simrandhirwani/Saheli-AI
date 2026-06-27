@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Mic, Square, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function AudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
@@ -29,7 +30,7 @@ export default function AudioRecorder() {
         formData.append("file", audioBlob, "recording.webm");
 
         try {
-          const response = await fetch("http://localhost:8000/api/audio", {
+          const response = await fetch(`${API_BASE_URL}/api/audio`, {
             method: "POST",
             body: formData,
           });

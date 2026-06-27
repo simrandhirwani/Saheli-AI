@@ -18,7 +18,6 @@ export default function Navbar() {
     { name: 'HaqFinder', path: '/haqfinder' },
     { name: 'BolDo', path: '/boldo' },
     { name: 'Pehchaan', path: '/pehchaan' },
-    { name: 'Choupal', path: '/choupal' },
   ];
 
   return (

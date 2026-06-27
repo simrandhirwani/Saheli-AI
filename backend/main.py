@@ -1,14 +1,14 @@
+import io
 import os
 import datetime
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import Dict, List, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from groq import Groq
-from typing import List
 
 load_dotenv()
 
@@ -16,7 +16,7 @@ app = FastAPI()
 
 PRODUCTION_ORIGINS = [
     "http://localhost:5173",
-    "https://saheli-ai-psi.vercel.app/",  # TODO: Put your exact Vercel app URL here
+    "https://saheli-ai-psi.vercel.app",
 ]
 
 app.add_middleware(
@@ -49,6 +49,14 @@ class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage]
     language: str
+
+class Milestone(BaseModel):
+    user: str
+    city: str
+    text: str
+    time: str
+    hearts: int
+    comments: int
 
 # --- HAQFINDER SECURE CHAT ENDPOINT ---
 
