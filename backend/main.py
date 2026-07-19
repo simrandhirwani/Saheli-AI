@@ -21,10 +21,10 @@ PRODUCTION_ORIGINS = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=PRODUCTION_ORIGINS, 
+    allow_origins=PRODUCTION_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"], 
+    allow_headers=["*"],
 )
 
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -32,6 +32,36 @@ DB_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
     return psycopg2.connect(DB_URL)
+
+# --- DISTRESS / DANGER KEYWORD BANK ---
+# Simple substring matching across English, Hindi, Gujarati, Marathi (native script + common
+# romanized spellings), since Whisper auto-detects the spoken language and may transcribe
+# in any of them. This is intentionally conservative (favors recall) for a safety feature —
+# false positives just show a 3s alert, which is an acceptable tradeoff for this use case.
+DANGER_KEYWORDS = [
+    # English
+    "help me", "help", "save me", "someone help", "call the police", "call police",
+    "let me go", "don't touch me", "stop it", "stop hitting", "i'm scared", "im scared",
+    # Hindi
+    "बचाओ", "मदद करो", "मदद", "छोड़ो मुझे", "पुलिस बुलाओ", "मुझे बचाओ",
+    "bachao", "madad karo", "madad", "chhodo mujhe", "police bulao", "mujhe bachao",
+    # Gujarati
+    "બચાવો", "મદદ કરો", "મદદ", "છોડો મને", "પોલીસ બોલાવો",
+    "bachavo", "madad karo", "chhodo mane", "police bolavo",
+    # Marathi
+    "वाचवा", "मदत करा", "मदत", "सोडा मला", "पोलिसांना बोलवा",
+    "vachva", "madat kara", "soda mala", "policansana bolva",
+]
+
+def detect_danger_keyword(text: str) -> Optional[str]:
+    """Returns the first matched distress phrase found in the transcript, or None."""
+    if not text:
+        return None
+    lowered = text.lower()
+    for keyword in DANGER_KEYWORDS:
+        if keyword.lower() in lowered:
+            return keyword
+    return None
 
 # --- PYDANTIC SCHEMAS FOR HAQFINDER CHAT ---
 class WaitlistEntry(BaseModel):
@@ -65,7 +95,7 @@ async def join_waitlist(entry: WaitlistEntry):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Auto-create the table for the hackathon
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS waitlist (
@@ -78,14 +108,14 @@ async def join_waitlist(entry: WaitlistEntry):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        
+
         # Insert the data
         cursor.execute("""
             INSERT INTO waitlist (name, email, source, beta_optin, community_optin)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (email) DO NOTHING; 
+            ON CONFLICT (email) DO NOTHING;
         """, (entry.name, entry.email, entry.source, entry.beta_optin, entry.community_optin))
-        
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -112,7 +142,7 @@ async def process_haqfinder_chat(request: ChatRequest):
         formatted_messages = [{"role": "system", "content": system_prompt}]
         for msg in request.history:
             formatted_messages.append({"role": msg.role, "content": msg.content})
-        
+
         # Append current user prompt slice
         formatted_messages.append({"role": "user", "content": request.message})
 
@@ -137,18 +167,18 @@ async def get_transient_logs(session_id: str):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        one_hour_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=1)
-        
+
+        twenty_four_hours_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
+
         query = """
-            SELECT log_text as text, created_at as timestamp 
-            FROM safemode_logs 
+            SELECT log_text as text, created_at as timestamp
+            FROM safemode_logs
             WHERE session_id = %s AND created_at >= %s
             ORDER BY created_at ASC;
         """
-        cursor.execute(query, (session_id, one_hour_ago))
+        cursor.execute(query, (session_id, twenty_four_hours_ago))
         logs = cursor.fetchall()
-        
+
         cursor.close()
         conn.close()
         return logs
@@ -162,12 +192,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
     audio_buffer = bytearray()
     print(f"WebSocket Connected Session: {session_id}")
-    
+
     try:
         while True:
             data = await websocket.receive_bytes()
             audio_buffer.extend(data)
-            
+
             # Process block once threshold capacity reached
             if len(audio_buffer) >= 48000:
                 try:
@@ -175,16 +205,17 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     # This completely avoids read/write permission errors on Render containers
                     audio_stream = io.BytesIO(audio_buffer)
                     audio_stream.name = "audio_telemetry.webm"  # Whisper requires an explicit extension signature
-                    
+
                     transcription = groq_client.audio.transcriptions.create(
                         file=audio_stream,
                         model="whisper-large-v3",
                         response_format="text"
                     )
-                    
-                    if transcription.strip():
+
+                    clean_text = transcription.strip()
+                    if clean_text:
                         timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
-                        
+
                         # Persist telemetry records into the Neon instance
                         conn = get_db_connection()
                         cursor = conn.cursor()
@@ -192,23 +223,37 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             INSERT INTO safemode_logs (session_id, log_text, created_at)
                             VALUES (%s, %s, %s);
                         """
-                        cursor.execute(insert_query, (session_id, transcription.strip(), timestamp_str))
+                        cursor.execute(insert_query, (session_id, clean_text, timestamp_str))
                         conn.commit()
                         cursor.close()
                         conn.close()
-                        
+
                         await websocket.send_json({
                             "type": "TRANSCRIPT",
                             "data": {
                                 "timestamp": timestamp_str,
-                                "text": transcription.strip()
+                                "text": clean_text
                             }
                         })
+
+                        # DANGER-WORD SCAN — checked on every finalized transcript chunk.
+                        # If a distress phrase is found, push a dedicated alert event so the
+                        # frontend can flash the red overlay and confirm contacts were notified.
+                        matched_keyword = detect_danger_keyword(clean_text)
+                        if matched_keyword:
+                            await websocket.send_json({
+                                "type": "DANGER_ALERT",
+                                "data": {
+                                    "timestamp": timestamp_str,
+                                    "text": clean_text,
+                                    "keyword": matched_keyword
+                                }
+                            })
                 except Exception as e:
                     print(f"Production Processing Exception Tracker: {e}")
                 finally:
                     audio_buffer.clear()
-                    
+
     except WebSocketDisconnect:
         print(f"Session disconnected cleanly: {session_id}")
 
