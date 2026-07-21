@@ -36,6 +36,7 @@ The platform recognizes that traditional emergency tools fail because abusers mo
 ## Problem Statement
 
 According to the National Family Health Survey (NFHS-5) and National Crime Records Bureau (NCRB) data:
+
 1. **The Reporting Deficit:** 86% of women who experience domestic violence in India never report it or seek institutional help due to fear, social stigma, and institutional apathy at police desks.
 2. **Economic Dependency Trap:** Women frequently refrain from filing complaints because removing an abusive spouse removes the primary income source for their children.
 3. **Legal Drafting & Dialect Barriers:** Victims who attempt to report are often turned away because their verbal complaints lack specific legal references (such as IPC Section 498A or PWDVA codes) or are delivered in regional dialects that local precinct desks dismiss.
@@ -101,7 +102,7 @@ flowchart LR
     end
 
     UI -- "HTTPS / REST Requests" --> API
-    UI <--> "Persistent Audio Stream" <--> WS
+    UI <--> WS
     API --> Router
     Router -- "Raw WebM Bytes" --> Groq
     Groq -- "Multilingual Transcript" --> LLM
@@ -110,6 +111,7 @@ flowchart LR
     API -- "Persist Milestones & Directory" --> DB
     WS -- "Trigger Incident Packet" --> WhatsApp
     API -- "Return Court-Ready Payload" --> PDF
+```
 
 **Key Request Pipeline (BolDo Scribe):**
 1. Frontend captures audio via browser MediaRecorder in WebM/Opus format.
@@ -123,7 +125,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     A["User Lands on Saheli AI Web Platform"] --> B{"Choose Action"}
-    
+
     B -- "Explore Impact & Livelihood" --> C["MyStory / National Impact Map"]
     C --> D["Select State / UT (28 States + 8 UTs)"]
     D --> E["Inspect Local Metrics & Vetted Livelihood Partners (SEWA, Kudumbashree, etc.)"]
@@ -148,6 +150,7 @@ flowchart TD
 
     E & N & Q & S --> T["Global Safety Gate"]
     T -- "Click Panic Wipe" --> U["Flush LocalStorage, Sanitize Session, & Redirect Browser"]
+```
 
 ## Tech Stack
 
@@ -183,7 +186,7 @@ saheli-workspace/
 │   ├── src/
 │   │   ├── assets/                # Visual media assets
 │   │   ├── components/            # Reusable UI components (Navbar, AudioRecorder)
-│   │   ├── context/               # LanguageContext for multilingual state
+│   │   ├── context/                # LanguageContext for multilingual state
 │   │   ├── pages/                 # Core page modules
 │   │   │   ├── Boldo.jsx          # Voice-to-legal draft interface
 │   │   │   ├── HaqFinder.jsx      # AI legal assistant chat
@@ -198,6 +201,7 @@ saheli-workspace/
 │   ├── vercel.json                # Single-page application route rewrite configuration
 │   └── vite.config.js
 └── README.md
+```
 
 ## Local Setup Instructions
 
@@ -211,6 +215,26 @@ saheli-workspace/
 ```bash
 git clone <repository-url>
 cd saheli-workspace
+```
+
+### 2. Backend Setup
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate      # On Windows: venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Create a .env file (see Environment Variables section below)
+cp .env.example .env          # or create backend/.env manually
+
+# Start the FastAPI development server
+uvicorn main:app --reload --port 8000
+```
 
 ### 3. Frontend Setup
 ```bash
@@ -222,6 +246,7 @@ npm install
 
 # Start Vite development server
 npm run dev
+```
 
 ## Environment Variables
 
