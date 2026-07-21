@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, ShieldAlert, AlertTriangle, FileText, Download, Trash2, ArrowRight, CheckCircle2, Square, Loader2, ArrowLeft, Keyboard, HelpCircle, Quote } from 'lucide-react';
+import { Mic, ShieldAlert, AlertTriangle, FileText, Download, Trash2, ArrowRight, CheckCircle2, Square, Loader2, ArrowLeft, Keyboard, HelpCircle, Quote, ExternalLink, PhoneCall } from 'lucide-react';
 import { useLanguage } from '../App';
 import { API_BASE_URL } from '../config'; // Removed WS_BASE_URL
 import { jsPDF } from 'jspdf'; 
+
+// Official NCW (National Commission for Women) online complaint portal. Filing here means
+// the survivor does not need to visit a police station in person — NCW's Complaints and
+// Investigation Cell can take it up directly (Section 10 of the NCW Act) and liaise with
+// local police on her behalf.
+const NCW_PORTAL_URL = "https://ncwapps.nic.in/";
+const NCW_HELPLINE = "1091 / 7827170170";
 
 export default function Boldo() {
   const { lang } = useLanguage();
@@ -49,6 +56,14 @@ export default function Boldo() {
       legalRef: "References: IPC Section 498A (Domestic Cruelty), PWDVA Act 2005",
       btnAccept: "Accept & Generate PDF",
       btnRedo: "Redo Recording",
+      finalTitle: "Draft Generated Successfully",
+      finalSub: "Your formal grievance is ready to be submitted to the authorities.",
+      btnDownload: "Download PDF",
+      btnDeleteReset: "Delete & Reset",
+      ncwTitle: "You Can Also Submit This Online — No Police Visit Required",
+      ncwDesc: "The National Commission for Women (NCW) lets you submit this complaint directly through their online portal. Their team can take it up directly and coordinate with local police on your behalf, so you don't have to visit a station yourself.",
+      ncwHelplineLabel: "NCW Women Helpline (24x7):",
+      ncwButton: "Open NCW Complaint Portal",
       impactTitle: "Impact Across Bharat : Voices of Change",
       impactStories: [
         { name: "Kiran S.", village: "Anand, Gujarat", text: "Speaking my native Gujarati to BolDo generated a pristine structured document that local officers immediately acknowledged." },
@@ -76,6 +91,14 @@ export default function Boldo() {
       legalRef: "संदर्भ: IPC धारा 498A (घरेलू क्रूरता), PWDVA अधिनियम 2005",
       btnAccept: "स्वीकार करें और दस्तावेज़ बनाएं",
       btnRedo: "फिर से रिकॉर्ड करें",
+      finalTitle: "मसौदा सफलतापूर्वक तैयार हुआ",
+      finalSub: "आपकी औपचारिक शिकायत अधिकारियों को सौंपे जाने के लिए तैयार है।",
+      btnDownload: "PDF डाउनलोड करें",
+      btnDeleteReset: "हटाएं और फिर से शुरू करें",
+      ncwTitle: "आप इसे ऑनलाइन भी जमा कर सकती हैं — थाने जाना जरूरी नहीं",
+      ncwDesc: "राष्ट्रीय महिला आयोग (NCW) की वेबसाइट पर आप यह शिकायत सीधे ऑनलाइन जमा कर सकती हैं। उनकी टीम इसे सीधे संभाल सकती है और आपकी ओर से स्थानीय पुलिस से संपर्क करेगी, जिससे आपको खुद थाने जाने की जरूरत नहीं होगी।",
+      ncwHelplineLabel: "NCW महिला हेल्पलाइन (24x7):",
+      ncwButton: "NCW शिकायत पोर्टल खोलें",
       impactTitle: "भारत भर में प्रभाव // परिवर्तन की आवाजें",
       impactStories: [
         { name: "किरण एस.", village: "आनंद, गुजरात", text: "बोल-दो को अपनी मूल गुजराती में बोलने से एक स्पष्ट संरचित दस्तावेज़ तैयार हुआ जिसे स्थानीय अधिकारियों ने तुरंत स्वीकार कर लिया।" },
@@ -103,6 +126,14 @@ export default function Boldo() {
       legalRef: "સંદર્ભ: IPC કલમ 498A (ઘરેલું હિંસા), PWDVA ધારો 2005",
       btnAccept: "સ્વીકારો અને PDF બનાવો",
       btnRedo: "ફરીથી રેકોર્ડ કરો",
+      finalTitle: "મુસદ્દો સફળતાપૂર્વક તૈયાર થયો",
+      finalSub: "તમારી ઔપચારિક ફરિયાદ અધિકારીઓને સુપરત કરવા માટે તૈયાર છે.",
+      btnDownload: "PDF ડાઉનલોડ કરો",
+      btnDeleteReset: "ડિલીટ કરો અને ફરી શરૂ કરો",
+      ncwTitle: "તમે આ ઓનલાઇન પણ સબમિટ કરી શકો છો — પોલીસ સ્ટેશન જવાની જરૂર નથી",
+      ncwDesc: "રાષ્ટ્રીય મહિલા આયોગ (NCW) ની વેબસાઇટ પર તમે આ ફરિયાદ સીધી ઓનલાઇન સબમિટ કરી શકો છો. તેમની ટીમ તેને સીધી હાથ પર લઈ શકે છે અને તમારા વતી સ્થાનિક પોલીસનો સંપર્ક કરશે, જેથી તમારે જાતે સ્ટેશન જવાની જરૂર નહીં પડે.",
+      ncwHelplineLabel: "NCW મહિલા હેલ્પલાઇન (24x7):",
+      ncwButton: "NCW ફરિયાદ પોર્ટલ ખોલો",
       impactTitle: "સમગ્ર ભારતમાં પ્રભાવ // પરિવર્તનના અવાજો",
       impactStories: [
         { name: "કિરણ એસ.", village: "આણંદ, ગુજરાત", text: "મારી માતૃભાષા ગુજરાતીમાં બોલવાથી એક સરસ સત્તાવાર દસ્તાવેજ તૈયાર થયો જે સ્થાનિક અધિકારીઓએ તરત જ સ્વીકારી લીધો." },
@@ -130,6 +161,14 @@ export default function Boldo() {
       legalRef: "संदर्भ: IPC कलम 498A (घरगुती छळ), PWDVA कायदा 2005",
       btnAccept: "मंजूर करा आणि PDF बनवा",
       btnRedo: "पुन्हा रेकॉर्ड करा",
+      finalTitle: "मसुदा यशस्वीरित्या तयार झाला",
+      finalSub: "तुमची औपचारिक तक्रार अधिकाऱ्यांकडे सादर करण्यासाठी तयार आहे.",
+      btnDownload: "PDF डाउनलोड करा",
+      btnDeleteReset: "हटवा आणि पुन्हा सुरू करा",
+      ncwTitle: "तुम्ही हे ऑनलाइनही सबमिट करू शकता — पोलीस स्टेशनला जाण्याची गरज नाही",
+      ncwDesc: "राष्ट्रीय महिला आयोग (NCW) च्या वेबसाइटवर तुम्ही ही तक्रार थेट ऑनलाइन सबमिट करू शकता. त्यांची टीम ती थेट हाताळू शकते आणि तुमच्या वतीने स्थानिक पोलिसांशी संपर्क साधेल, त्यामुळे तुम्हाला स्वतः स्टेशनला जाण्याची गरज नाही.",
+      ncwHelplineLabel: "NCW महिला हेल्पलाइन (24x7):",
+      ncwButton: "NCW तक्रार पोर्टल उघडा",
       impactTitle: "भारतभरात प्रभाव // परिवर्तनाचे आवाज",
       impactStories: [
         { name: "किरण एस.", village: "आनंद, गुजरात", text: "बोल-दो मध्ये माझ्या मातृभाषेत (गुजराती) बोलल्यामुळे एक स्पष्ट कायदेशीर दस्तऐवज तयार झाला जो स्थानिक अधिकाऱ्यांनी त्वरित स्वीकारला." },
@@ -152,9 +191,11 @@ export default function Boldo() {
   const startStreamingAudio = async () => {
     setTranscript("");
     
-    // DYNAMIC WEBSOCKET URL FIX
+    // DYNAMIC WEBSOCKET URL FIX + language hint so Whisper doesn't have to guess the
+    // spoken language on short clips (this is what fixed the "only picks up one word" /
+    // garbled-language transcript issue).
     const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
-    const ws = new WebSocket(`${wsBaseUrl}/ws/safemode/${sessionId}`);
+    const ws = new WebSocket(`${wsBaseUrl}/ws/safemode/${sessionId}?lang=${lang}`);
     socketRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -443,23 +484,50 @@ export default function Boldo() {
   );
 
   const renderFinal = () => (
-    <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-[2rem] p-8 sm:p-12 shadow-sm text-center animate-[slideUp_0.2s_ease-out]">
-      <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-        <CheckCircle2 className="text-emerald-600" size={32} />
-      </div>
-      <h2 className="text-2xl font-black text-slate-900 font-serif mb-2">Draft Generated Successfully</h2>
-      <p className="text-slate-500 text-sm font-medium mb-10">Your formal grievance is ready to be submitted to the authorities.</p>
+    <div className="max-w-3xl mx-auto space-y-6 animate-[slideUp_0.2s_ease-out]">
+      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 sm:p-12 shadow-sm text-center">
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 className="text-emerald-600" size={32} />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 font-serif mb-2">{currentContent.finalTitle}</h2>
+        <p className="text-slate-500 text-sm font-medium mb-10">{currentContent.finalSub}</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button 
-          onClick={generateInstantPDF}
-          className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button 
+            onClick={generateInstantPDF}
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+          >
+            <Download size={18} /> {currentContent.btnDownload}
+          </button>
+          <button onClick={() => { setStep('entry'); setTranscript(""); setLegalDraft(""); setUserName(""); }} className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-rose-200 transition-all">
+            <Trash2 size={18} /> {currentContent.btnDeleteReset}
+          </button>
+        </div>
+      </div>
+
+      {/* NCW ONLINE COMPLAINT PORTAL AWARENESS CARD — shown after the draft/PDF is ready */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-8 shadow-sm text-left">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+            <ExternalLink className="text-rose-500" size={18} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 font-serif">{currentContent.ncwTitle}</h3>
+          </div>
+        </div>
+        <p className="text-slate-600 text-sm font-medium leading-relaxed mb-5">{currentContent.ncwDesc}</p>
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-5">
+          <PhoneCall size={14} className="text-rose-500" />
+          <span>{currentContent.ncwHelplineLabel} {NCW_HELPLINE}</span>
+        </div>
+        <a
+          href={NCW_PORTAL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full inline-flex bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-xl items-center justify-center gap-2 transition-all shadow-md"
         >
-          <Download size={18} /> Download PDF
-        </button>
-        <button onClick={() => { setStep('entry'); setTranscript(""); setLegalDraft(""); setUserName(""); }} className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-rose-200 transition-all">
-          <Trash2 size={18} /> Delete & Reset
-        </button>
+          {currentContent.ncwButton} <ExternalLink size={16} />
+        </a>
       </div>
     </div>
   );
