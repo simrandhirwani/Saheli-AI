@@ -5,18 +5,23 @@ import { API_BASE_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
 
 export default function HaqFinder() {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const { lang } = useLanguage();
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribingVoice, setIsTranscribingVoice] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  
-  // FIX 1: Change reference to the container itself
+
   const chatContainerRef = useRef(null);
+
+  // Refs for the mic-to-text voice input (previously this button did nothing at all —
+  // it only toggled a boolean with no actual recording or backend call behind it)
+  const recorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
 
   const [messages, setMessages] = useState([]);
 
-  // FIX 2: Scroll only the container's internal height, not the window
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
@@ -25,6 +30,18 @@ export default function HaqFinder() {
       });
     }
   }, [messages, isTyping]);
+
+  // Cleanup on unmount so the mic doesn't stay open if the user navigates away mid-recording
+  useEffect(() => {
+    return () => {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        recorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // Multilingual Content Library (9 Rights)
   const content = {
@@ -35,9 +52,12 @@ export default function HaqFinder() {
       localHeading: "Crisis Resolution Nodes",
       botTitle: "Saheli Legal AI",
       placeholder: "Tap mic or type your grievance...",
+      listeningPlaceholder: "Listening... tap the mic again to stop",
+      transcribingPlaceholder: "Transcribing your voice...",
       listenText: "Listen",
       draftBtn: "Draft Legal Grievance",
       errorMsg: "Network error connecting to the backend server.",
+      voiceErrorMsg: "Couldn't access the microphone. Please check your browser's mic permission.",
       cards: [
         { title: "Protection from Domestic Violence", desc: "Right to safe housing, protection orders, and medical aid.", code: "PWDVA Act, 2005" },
         { title: "Right to Equal Remuneration", desc: "Constitutional mandate guaranteeing equal pay for identical work profiles.", code: "Equal Remuneration Act" },
@@ -57,9 +77,12 @@ export default function HaqFinder() {
       localHeading: "संकट समाधान केंद्र",
       botTitle: "सहेली कानूनी एआई",
       placeholder: "माइक दबाएं या अपनी शिकायत लिखें...",
+      listeningPlaceholder: "सुन रहे हैं... रोकने के लिए फिर से माइक दबाएं",
+      transcribingPlaceholder: "आपकी आवाज़ को लिखा जा रहा है...",
       listenText: "सुनें",
       draftBtn: "कानूनी शिकायत का मसौदा बनाएं",
       errorMsg: "सर्वर से जुड़ने में नेटवर्क त्रुटि।",
+      voiceErrorMsg: "माइक्रोफ़ोन तक पहुंच नहीं हो सकी। कृपया अपने ब्राउज़र की माइक अनुमति जांचें।",
       cards: [
         { title: "घरेलू हिंसा से संरक्षण", desc: "सुरक्षित आवास, सुरक्षा आदेश और मुफ्त चिकित्सा सहायता का अधिकार।", code: "PWDVA अधिनियम, 2005" },
         { title: "समान वेतन का अधिकार", desc: "समान कार्य के लिए पुरुषों और महिलाओं दोनों के लिए समान वेतन की गारंटी।", code: "समान पारिश्रमिक अधिनियम" },
@@ -79,9 +102,12 @@ export default function HaqFinder() {
       localHeading: "સહાયતા અને માર્ગદર્શન કેન્દ્રો",
       botTitle: "સહેલી કાનૂની એઆઈ",
       placeholder: "માઇક દબાવો અથવા તમારી ફરિયાદ લખો...",
+      listeningPlaceholder: "સાંભળી રહ્યા છીએ... રોકવા માટે ફરી માઇક દબાવો",
+      transcribingPlaceholder: "તમારો અવાજ લખાઈ રહ્યો છે...",
       listenText: "સાંભળો",
       draftBtn: "કાનૂની ફરિયાદનો ડ્રાફ્ટ બનાવો",
       errorMsg: "સર્વર સાથે જોડાવામાં નેટવર્ક ભૂલ.",
+      voiceErrorMsg: "માઇક્રોફોન ઍક્સેસ કરી શકાયું નથી. કૃપા કરી તમારા બ્રાઉઝરની માઇક પરવાનગી તપાસો.",
       cards: [
         { title: "ઘરેલુ હિંસાથી રક્ષણ", desc: "સુરક્ષિત આવાસ, સુરક્ષા આદેશો અને તબીબી સહાયનો અધિકાર.", code: "PWDVA એક્ટ, 2005" },
         { title: "સમાન વેતનનો અધિકાર", desc: "સમાન કામ માટે સમાન વેતનની ખાતરી આપતો બંધારણીય અધિકાર.", code: "સમાન વેતન કાયદો" },
@@ -101,9 +127,12 @@ export default function HaqFinder() {
       localHeading: "स्थानिक मदत केंद्रे",
       botTitle: "सहेली कायदेशीर एआय",
       placeholder: "माइक दाबा किंवा तुमची तक्रार लिहा...",
+      listeningPlaceholder: "ऐकत आहे... थांबवण्यासाठी पुन्हा माइक दाबा",
+      transcribingPlaceholder: "तुमचा आवाज लिहिला जात आहे...",
       listenText: "ऐका",
       draftBtn: "कायदेशीर तक्रारीचा मसुदा तयार करा",
       errorMsg: "सर्व्हरशी कनेक्ट करताना नेटवर्क त्रुटी.",
+      voiceErrorMsg: "मायक्रोफोन वापरता आला नाही. कृपया तुमच्या ब्राउझरची माइक परवानगी तपासा.",
       cards: [
         { title: "घरगुती हिंसेपासून संरक्षण", desc: "सुरक्षित निवारा, संरक्षण आदेश आणि वैद्यकीय मदत मिळवण्याचा कायदेशीर हक्क.", code: "PWDVA कायदा, 2005" },
         { title: "समान वेतनाचा अधिकार", desc: "समान कामासाठी पुरुष आणि महिलांना समान वेतन देणारे घटनात्मक संरक्षण.", code: "समान वेतन कायदा" },
@@ -120,14 +149,12 @@ export default function HaqFinder() {
 
   const currentContent = content[lang] || content['en'];
 
-  // Update initial greeting when language changes globally
   useEffect(() => {
     let initialGreeting = "Welcome to Saheli. How can I assist you with your legal rights or government schemes today?";
     if (lang === 'hi') initialGreeting = "सहेली में आपका स्वागत है। मैं आज आपके कानूनी अधिकारों या योजनाओं में आपकी क्या सहायता कर सकती हूँ?";
     if (lang === 'gu') initialGreeting = "સહેલીમાં આપનું સ્વાગત છે. હું આજે તમારા કાનૂની અધિકારો અથવા યોજનાઓ વિશે તમને શું મદદ કરી શકું?";
     if (lang === 'mr') initialGreeting = "सहेलीमध्ये आपले स्वागत आहे. मी आज तुमच्या कायदेशीर अधिकारांबद्दल किंवा योजनांबद्दल काय मदत करू शकते?";
-    
-    // Preserve chat history during language toggle
+
     if (messages.length === 0) {
       setMessages([{ id: Date.now(), text: initialGreeting, isBot: true, hasAction: false }]);
     }
@@ -143,6 +170,71 @@ export default function HaqFinder() {
   ];
 
   // ==========================================
+  // VOICE INPUT — record on tap, transcribe on second tap, drop into the input field
+  // ==========================================
+  const handleMicClick = async () => {
+    // Second tap while recording: stop and let onstop handle transcription
+    if (isRecording) {
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+        recorderRef.current.stop();
+      }
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      recorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        setIsRecording(false);
+
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        if (blob.size < 2000) return; // too short to be real speech
+
+        setIsTranscribingVoice(true);
+        try {
+          const formData = new FormData();
+          formData.append('audio', blob, 'voice.webm');
+          formData.append('lang', lang);
+
+          const res = await fetch(`${API_BASE_URL}/api/transcribe`, {
+            method: 'POST',
+            body: formData
+          });
+          if (!res.ok) throw new Error(`Transcribe API error: ${res.status}`);
+
+          const data = await res.json();
+          if (data.text) {
+            setInput(prev => (prev ? prev + " " : "") + data.text);
+          }
+        } catch (err) {
+          console.error("[HaqFinder] Voice transcription failed:", err);
+        } finally {
+          setIsTranscribingVoice(false);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("[HaqFinder] Mic permission failed:", err);
+      setMessages(prev => [...prev, { id: Date.now(), text: currentContent.voiceErrorMsg, isBot: true }]);
+    }
+  };
+
+  // ==========================================
   // SECURE BACKEND INTEGRATION
   // ==========================================
   const handleSendMessage = async (e) => {
@@ -151,19 +243,17 @@ export default function HaqFinder() {
 
     const userText = input;
     const userMsg = { id: Date.now(), text: userText, isBot: false };
-    
+
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
     try {
-      // Format chat history to send to backend
       const chatHistory = messages.map(msg => ({
         role: msg.isBot ? "assistant" : "user",
         content: msg.text
       }));
 
-      // Call your backend instead of Groq directly
       const response = await fetch(`${API_BASE_URL}/api/haqfinder/chat`, {
         method: "POST",
         headers: {
@@ -172,25 +262,25 @@ export default function HaqFinder() {
         body: JSON.stringify({
           message: userText,
           history: chatHistory,
-          language: lang // Pass the current UI language to help the backend prompt
+          language: lang
         })
       });
 
       if (!response.ok) throw new Error("Backend API Error");
 
       const data = await response.json();
-      const botReply = data.reply; // Assuming your backend returns { "reply": "..." }
+      const botReply = data.reply;
 
-      const suggestsDrafting = botReply.toLowerCase().includes('draft') || 
-                               botReply.toLowerCase().includes('मसौदा') || 
-                               botReply.toLowerCase().includes('ડ્રાફ્ટ') || 
+      const suggestsDrafting = botReply.toLowerCase().includes('draft') ||
+                               botReply.toLowerCase().includes('मसौदा') ||
+                               botReply.toLowerCase().includes('ડ્રાફ્ટ') ||
                                botReply.toLowerCase().includes('मसुदा');
 
-      setMessages(prev => [...prev, { 
-        id: Date.now() + 1, 
-        text: botReply, 
-        isBot: true, 
-        hasAction: suggestsDrafting 
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: botReply,
+        isBot: true,
+        hasAction: suggestsDrafting
       }]);
 
     } catch (error) {
@@ -201,9 +291,17 @@ export default function HaqFinder() {
     }
   };
 
+  const activePlaceholder = isTranscribingVoice
+    ? currentContent.transcribingPlaceholder
+    : isRecording
+      ? currentContent.listeningPlaceholder
+      : isTyping
+        ? "Saheli is processing..."
+        : currentContent.placeholder;
+
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-slate-800 pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 antialiased">
-      
+
       {/* HEADER: Centered */}
       <div className="text-center max-w-2xl mx-auto flex flex-col items-center">
         <h1 className="text-3xl font-black text-slate-900 font-serif tracking-tight flex items-center justify-center gap-3">
@@ -217,7 +315,7 @@ export default function HaqFinder() {
 
       {/* CENTER PIECE: SECURE AI DIALOG CONSOLE */}
       <div className="max-w-4xl mx-auto w-full bg-white border border-slate-200 rounded-[2rem] overflow-hidden flex flex-col h-[500px] shadow-sm">
-        
+
         {/* Chat Header */}
         <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -233,19 +331,18 @@ export default function HaqFinder() {
           </div>
         </div>
 
-        {/* FIX 3: Attach chatContainerRef to this div, and remove the dummy div at the bottom */}
         <div ref={chatContainerRef} className="flex-1 p-6 overflow-y-auto space-y-6 bg-white">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex items-end gap-2 ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
               {msg.isBot && <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mb-1"><Bot size={14} className="text-slate-500" /></div>}
-              
+
               <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm font-medium leading-relaxed shadow-sm ${
-                msg.isBot 
-                  ? 'bg-slate-50 border border-slate-200 text-slate-700 rounded-bl-sm whitespace-pre-wrap' 
+                msg.isBot
+                  ? 'bg-slate-50 border border-slate-200 text-slate-700 rounded-bl-sm whitespace-pre-wrap'
                   : 'bg-rose-500 text-white rounded-br-sm whitespace-pre-wrap'
               }`}>
                 <p>{msg.text}</p>
-                
+
                 {msg.hasAction && (
                   <div className="mt-4 pt-4 border-t border-slate-200/60">
                     <button onClick={() => navigate('/boldo')} className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-colors">
@@ -265,7 +362,6 @@ export default function HaqFinder() {
             </div>
           ))}
 
-          {/* Typing Indicator */}
           {isTyping && (
              <div className="flex items-end gap-2 justify-start">
                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mb-1">
@@ -281,27 +377,30 @@ export default function HaqFinder() {
 
         {/* Input Area */}
         <form onSubmit={handleSendMessage} className="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-3">
-          <button 
+          <button
             type="button"
-            onClick={() => setIsRecording(!isRecording)}
+            onClick={handleMicClick}
+            disabled={isTranscribingVoice}
             className={`p-3.5 rounded-full transition-all shrink-0 shadow-sm ${
-              isRecording 
-                ? 'bg-rose-100 border-2 border-rose-500 text-rose-600 animate-pulse' 
-                : 'bg-white border border-slate-200 text-slate-400 hover:text-rose-500'
+              isRecording
+                ? 'bg-rose-100 border-2 border-rose-500 text-rose-600 animate-pulse'
+                : isTranscribingVoice
+                  ? 'bg-slate-100 border border-slate-200 text-slate-300'
+                  : 'bg-white border border-slate-200 text-slate-400 hover:text-rose-500'
             }`}
           >
-            <Mic size={18} />
+            {isTranscribingVoice ? <Loader2 size={18} className="animate-spin" /> : <Mic size={18} />}
           </button>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isTyping}
-            placeholder={isTyping ? "Saheli is processing..." : currentContent.placeholder}
+            disabled={isTyping || isRecording || isTranscribingVoice}
+            placeholder={activePlaceholder}
             className="flex-1 bg-white border border-slate-200 rounded-2xl px-5 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 shadow-sm transition-all disabled:opacity-50"
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isTyping || !input.trim()}
             className="bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white p-3.5 rounded-full transition-colors shrink-0 shadow-md"
           >
@@ -338,7 +437,6 @@ export default function HaqFinder() {
         <h2 className="text-xs font-bold uppercase tracking-widest text-rose-500 mb-6 flex items-center gap-2">
           <MapPin size={16} /> {currentContent.localHeading}
         </h2>
-        {/* Updated grid spacing for the 6 emergency contact nodes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {localOffices.map((office, idx) => (
             <div key={idx} className="bg-white border border-rose-100 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">

@@ -11,19 +11,22 @@ export default function SafeMode() {
   const [sosMeta, setSosMeta] = useState(null); // { keyword, text }
   const [showModal, setShowModal] = useState(false);
 
-  // Real-Time Storage Arrays
   const [liveLogs, setLiveLogs] = useState([]);
   const [systemLog, setSystemLog] = useState("");
 
-  // Refs to control recording states without component re-renders
+  // Refs
   const socketRef = useRef(null);
   const recorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const isRecordingRef = useRef(false); // mirrors isRecording, read inside async/timeout closures
   const sosTimerRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
   const intentionalCloseRef = useRef(false);
-  const sessionId = "svnit_user_session_01"; // Constant demo track id
+  const sessionId = "svnit_user_session_01";
 
   const MAX_RECONNECT_ATTEMPTS = 4;
+  const SEGMENT_DURATION_MS = 4000; // each recorded clip is a complete, standalone 4s segment
+  const MIN_CLIP_BYTES = 4000; // skip near-silent clips client-side too, saves a wasted API call
 
   const labels = {
     en: {
@@ -114,12 +117,16 @@ export default function SafeMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // CLEANUP ON UNMOUNT — close socket + stop mic so nothing keeps running in the background
+  // CLEANUP ON UNMOUNT
   useEffect(() => {
     return () => {
       intentionalCloseRef.current = true;
+      isRecordingRef.current = false;
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
         recorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
       if (socketRef.current) {
         socketRef.current.close();
@@ -135,7 +142,7 @@ export default function SafeMode() {
     setSosReason(reason);
     setSosMeta(meta);
     setSosActive(true);
-    // Screen stays red for 3 seconds, then clears itself automatically
+    // Screen stays red for exactly 3 seconds, then clears itself automatically
     sosTimerRef.current = setTimeout(() => {
       setSosActive(false);
       setSosReason(null);
@@ -143,84 +150,102 @@ export default function SafeMode() {
     }, 3000);
   };
 
-  // LIVE STREAMING MECHANICS
-  const startStreamingEngine = async () => {
-  intentionalCloseRef.current = false;
-  setSystemLog("Connecting to secure backend sockets...");
+  // CONTINUOUS SEGMENT-BASED RECORDING
+  // Records fixed-length, fully self-contained clips (stop -> send -> start a fresh
+  // recorder) and chains them back-to-back as long as isRecordingRef stays true. This
+  // is what makes listening genuinely continuous instead of stopping after ~10s: each
+  // clip is independently valid audio, so there's nothing to "run out" or corrupt.
+  const recordSegment = (stream, ws) => {
+    if (!isRecordingRef.current || ws.readyState !== WebSocket.OPEN) return;
 
-  // Pass the active UI language as a hint to the backend's Whisper call. Without this,
-  // Whisper has to auto-detect the spoken language from a short/noisy clip, which is what
-  // was causing transcripts to randomly come back in the wrong script/language.
-  const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
-  const wsUrl = `${wsBaseUrl}/ws/safemode/${sessionId}?lang=${lang}`;
-  console.log("[SafeMode] Attempting WS connection to:", wsUrl);
+    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    const chunks = [];
+    recorderRef.current = recorder;
 
-  const ws = new WebSocket(wsUrl);
-  socketRef.current = ws;
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
 
-  ws.onerror = (err) => {
-    console.error("[SafeMode] WebSocket error:", err);
-  };
+    recorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      if (blob.size > MIN_CLIP_BYTES && ws.readyState === WebSocket.OPEN) {
+        const buffer = await blob.arrayBuffer();
+        ws.send(buffer);
+      }
+      if (isRecordingRef.current) recordSegment(stream, ws); // chain the next segment
+    };
 
-  ws.onmessage = (event) => {
-    console.log("[SafeMode] Message received:", event.data);
-    const response = JSON.parse(event.data);
-    if (response.type === "TRANSCRIPT") {
-      setLiveLogs(prev => [...prev, response.data]);
-      setSystemLog(`✓ [Whisper Engine]: "${response.data.text}"`);
-    }
-    if (response.type === "DANGER_ALERT") {
-      setSystemLog(currentContent.logCritical);
-      triggerOverlay('auto', response.data);
-    }
-  };
-
-  ws.onopen = async () => {
-    console.log("[SafeMode] WebSocket OPEN");
-    reconnectAttemptsRef.current = 0;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("[SafeMode] Mic access granted");
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = async (e) => {
-        console.log("[SafeMode] Audio chunk size:", e.data.size, "WS state:", ws.readyState);
-        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          const buffer = await e.data.arrayBuffer();
-          ws.send(buffer);
-        }
-      };
-
-      recorder.start(3000);
-      setIsRecording(true);
-    } catch (err) {
-      console.error("[SafeMode] getUserMedia failed:", err);
-      setSystemLog("Device hardware context deployment failed: Microphone Access Denied.");
-      ws.close();
-    }
-  };
-
-  ws.onclose = (event) => {
-    console.warn("[SafeMode] WebSocket CLOSED. Code:", event.code, "Reason:", event.reason, "Clean:", event.wasClean);
-    if (intentionalCloseRef.current) return;
-    if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-      setSystemLog(currentContent.logReconnectFailed);
-      setIsRecording(false);
-      return;
-    }
-    reconnectAttemptsRef.current += 1;
-    setSystemLog(currentContent.logReconnecting);
+    recorder.start();
     setTimeout(() => {
-      if (!intentionalCloseRef.current) startStreamingEngine();
-    }, 2000 * reconnectAttemptsRef.current);
+      if (recorder.state !== 'inactive') recorder.stop();
+    }, SEGMENT_DURATION_MS);
   };
-};
+
+  const startStreamingEngine = async () => {
+    intentionalCloseRef.current = false;
+    setSystemLog("Connecting to secure backend sockets...");
+
+    const wsBaseUrl = API_BASE_URL.replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsBaseUrl}/ws/safemode/${sessionId}?lang=${lang}`);
+    socketRef.current = ws;
+
+    ws.onerror = (err) => console.error("[SafeMode] WebSocket error:", err);
+
+    ws.onmessage = (event) => {
+      const response = JSON.parse(event.data);
+      if (response.type === "TRANSCRIPT") {
+        setLiveLogs(prev => [...prev, response.data]);
+        setSystemLog(`✓ [Whisper Engine]: "${response.data.text}"`);
+      }
+      if (response.type === "DANGER_ALERT") {
+        setSystemLog(currentContent.logCritical);
+        triggerOverlay('auto', response.data);
+      }
+    };
+
+    ws.onopen = async () => {
+      reconnectAttemptsRef.current = 0;
+      try {
+        let stream = streamRef.current;
+        if (!stream || !stream.active) {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          streamRef.current = stream;
+        }
+        isRecordingRef.current = true;
+        setIsRecording(true);
+        recordSegment(stream, ws);
+      } catch (err) {
+        console.error("[SafeMode] getUserMedia failed:", err);
+        setSystemLog("Device hardware context deployment failed: Microphone Access Denied.");
+        ws.close();
+      }
+    };
+
+    ws.onclose = () => {
+      if (intentionalCloseRef.current) return;
+      if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        setSystemLog(currentContent.logReconnectFailed);
+        isRecordingRef.current = false;
+        setIsRecording(false);
+        return;
+      }
+      reconnectAttemptsRef.current += 1;
+      setSystemLog(currentContent.logReconnecting);
+      setTimeout(() => {
+        if (!intentionalCloseRef.current) startStreamingEngine();
+      }, 2000 * reconnectAttemptsRef.current);
+    };
+  };
 
   const stopStreamingEngine = () => {
     intentionalCloseRef.current = true;
+    isRecordingRef.current = false;
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
       recorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
     if (socketRef.current) {
       socketRef.current.close();
@@ -296,7 +321,6 @@ export default function SafeMode() {
       {/* CORE ACTIVE ORB PANELS */}
       <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-10 shadow-sm flex flex-col items-center justify-center text-center space-y-8">
 
-        {/* Radar Orb Container */}
         <div
           onClick={isRecording ? stopStreamingEngine : startStreamingEngine}
           role="button"
@@ -305,7 +329,6 @@ export default function SafeMode() {
             isRecording ? 'scale-105' : 'hover:scale-105'
           }`}
         >
-          {/* Background Pulse Rings */}
           {isRecording && (
             <>
               <div className="absolute inset-0 rounded-full border border-rose-500/20 scale-[1.35] animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] opacity-50"></div>
@@ -358,7 +381,6 @@ export default function SafeMode() {
           <button onClick={() => setShowModal(true)} className="bg-rose-500 text-white p-2.5 rounded-xl hover:bg-rose-600 shadow-md" aria-label="Add contact"><Plus size={16} /></button>
         </div>
 
-        {/* MOCK-MODE DISCLAIMER */}
         <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-left">
           <Info size={14} className="text-amber-600 mt-0.5 flex-shrink-0" />
           <p className="text-[11px] text-amber-800 font-medium leading-relaxed">{currentContent.disclaimer}</p>

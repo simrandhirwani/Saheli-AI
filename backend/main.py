@@ -2,7 +2,7 @@ import io
 import os
 import datetime
 from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -33,11 +33,62 @@ DB_URL = os.getenv("DATABASE_URL")
 def get_db_connection():
     return psycopg2.connect(DB_URL)
 
-# --- DISTRESS / DANGER KEYWORD BANK ---
-# Simple substring matching across English, Hindi, Gujarati, Marathi (native script + common
-# romanized spellings), since Whisper auto-detects the spoken language and may transcribe
-# in any of them. This is intentionally conservative (favors recall) for a safety feature —
-# false positives just show a 3s alert, which is an acceptable tradeoff for this use case.
+# =====================================================================================
+# AUDIO TRANSCRIPTION CORE
+# =====================================================================================
+# UI language codes map directly to ISO-639-1, which is what Groq/Whisper expects.
+SUPPORTED_WHISPER_LANGS = {"en", "hi", "gu", "mr"}
+
+# Below this size a clip is almost certainly silence/noise rather than speech — skip it
+# rather than risk Whisper hallucinating text out of near-nothing.
+MIN_AUDIO_BYTES = 4000
+
+# Stock phrases Whisper tends to "hallucinate" when fed silence/noise. Filtered out before
+# they ever reach a transcript log, the danger-word scan, or a legal draft.
+WHISPER_HALLUCINATION_PHRASES = {
+    "thank you", "thank you.", "thanks for watching", "please subscribe",
+    "subscribe", "you", "bye", "bye bye", "the end", "...", "silence",
+    "amara", "namaste",
+}
+
+def is_probable_hallucination(text: str) -> bool:
+    cleaned = text.strip().lower().strip(".!? ")
+    if not cleaned:
+        return True
+    if cleaned in WHISPER_HALLUCINATION_PHRASES:
+        return True
+    if len(cleaned) <= 3 and cleaned.isalpha():
+        return True
+    return False
+
+def transcribe_audio_bytes(audio_bytes: bytes, lang_hint: Optional[str]) -> str:
+    """
+    Transcribes ONE complete, independently-decodable audio clip. Every caller in this
+    file (both websockets and the one-shot REST endpoint) must pass a STANDALONE clip —
+    never a raw fragment of a longer stream — or Whisper will produce garbled / wrong-
+    language output. Passing an explicit language hint (instead of auto-detect) also
+    measurably improves accuracy and latency on short clips.
+    """
+    audio_stream = io.BytesIO(audio_bytes)
+    audio_stream.name = "clip.webm"
+
+    kwargs = {
+        "file": audio_stream,
+        "model": "whisper-large-v3",
+        "response_format": "text",
+        "temperature": 0.0,
+    }
+    if lang_hint in SUPPORTED_WHISPER_LANGS:
+        kwargs["language"] = lang_hint
+
+    transcription = groq_client.audio.transcriptions.create(**kwargs)
+    return transcription.strip()
+
+# =====================================================================================
+# DISTRESS / DANGER KEYWORD BANK (SafeMode only — never applied to BolDo dictation,
+# since a survivor narrating her story will naturally use these exact words, and we
+# don't want that to falsely trigger a "SafeMode has alerted your contacts" overlay)
+# =====================================================================================
 DANGER_KEYWORDS = [
     # English
     "help me", "help", "save me", "someone help", "call the police", "call police",
@@ -54,7 +105,6 @@ DANGER_KEYWORDS = [
 ]
 
 def detect_danger_keyword(text: str) -> Optional[str]:
-    """Returns the first matched distress phrase found in the transcript, or None."""
     if not text:
         return None
     lowered = text.lower()
@@ -63,36 +113,9 @@ def detect_danger_keyword(text: str) -> Optional[str]:
             return keyword
     return None
 
-# --- WHISPER LANGUAGE HINTING ---
-# Groq's Whisper endpoint auto-detects language when none is given. On short/noisy clips
-# that auto-detection is unreliable and can lock onto a completely wrong language (this is
-# what was producing garbled "Urdu" style output even though nobody spoke Urdu) — giving it
-# an explicit language hint from the UI's active language selector fixes almost all of that,
-# since Whisper then only has to transcribe, not also guess the language.
-SUPPORTED_WHISPER_LANGS = {"en", "hi", "gu", "mr"}
-
-# --- HALLUCINATION FILTER ---
-# Whisper (like most speech models) sometimes "hallucinates" short stock phrases when it's
-# given silence or near-silence instead of real speech. We drop those before they ever reach
-# the transcript log or the danger-keyword scan.
-WHISPER_HALLUCINATION_PHRASES = {
-    "thank you", "thank you.", "thanks for watching", "please subscribe",
-    "subscribe", "you", "bye", "bye bye", "the end", "...", "silence",
-    "amara", "namaste",
-}
-
-def is_probable_hallucination(text: str) -> bool:
-    cleaned = text.strip().lower().strip(".!? ")
-    if not cleaned:
-        return True
-    if cleaned in WHISPER_HALLUCINATION_PHRASES:
-        return True
-    # A single very short word repeated is almost always noise, not real speech
-    if len(cleaned) <= 3 and cleaned.isalpha():
-        return True
-    return False
-
-# --- PYDANTIC SCHEMAS FOR HAQFINDER CHAT ---
+# =====================================================================================
+# PYDANTIC SCHEMAS
+# =====================================================================================
 class WaitlistEntry(BaseModel):
     name: str
     email: str
@@ -117,9 +140,15 @@ class Milestone(BaseModel):
     hearts: int
     comments: int
 
-# --- HEALTH CHECK ---
-# Lightweight, no DB/API calls, so a cron-job ping (e.g. every 10-14 min) is cheap and
-# keeps the Render free-tier instance from spinning down due to inactivity.
+class BoldoDraftRequest(BaseModel):
+    name: str
+    transcript: str
+    language: str
+
+# =====================================================================================
+# HEALTH CHECK — point an uptime cron (UptimeRobot, cron-job.org, etc) at this every
+# 10-14 minutes so Render's free tier doesn't spin down before/during your demo.
+# =====================================================================================
 @app.get("/health")
 async def health_check():
     return {
@@ -127,15 +156,11 @@ async def health_check():
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
 
-# --- HAQFINDER SECURE CHAT ENDPOINT ---
-
 @app.post("/api/waitlist")
 async def join_waitlist(entry: WaitlistEntry):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
-        # Auto-create the table for the hackathon
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS waitlist (
                 id SERIAL PRIMARY KEY,
@@ -147,14 +172,11 @@ async def join_waitlist(entry: WaitlistEntry):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
-        # Insert the data
         cursor.execute("""
             INSERT INTO waitlist (name, email, source, beta_optin, community_optin)
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (email) DO NOTHING;
         """, (entry.name, entry.email, entry.source, entry.beta_optin, entry.community_optin))
-
         conn.commit()
         cursor.close()
         conn.close()
@@ -167,7 +189,6 @@ async def join_waitlist(entry: WaitlistEntry):
 @app.post("/api/haqfinder/chat")
 async def process_haqfinder_chat(request: ChatRequest):
     try:
-        # Build out structural system behavior based on custom localization strings
         system_prompt = (
             f"You are Saheli, an AI legal assistant for women in India. Answer entirely "
             f"in the language corresponding to this language code: '{request.language}' "
@@ -176,48 +197,107 @@ async def process_haqfinder_chat(request: ChatRequest):
             f"If the user describes an actionable grievance or violation, explicitly offer "
             f"to draft a 'court-ready formal grievance letter' for them at the end of your response."
         )
-
-        # Map current runtime history configuration to Groq structure
         formatted_messages = [{"role": "system", "content": system_prompt}]
         for msg in request.history:
             formatted_messages.append({"role": msg.role, "content": msg.content})
-
-        # Append current user prompt slice
         formatted_messages.append({"role": "user", "content": request.message})
 
-        # Secure server-side call via execution client loop
         completion = groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=formatted_messages,
             temperature=0.5,
             max_tokens=1024
         )
-
         bot_reply = completion.choices[0].message.content
         return {"reply": bot_reply}
-
     except Exception as e:
         print(f"HaqFinder Chat Core Failure: {e}")
         raise HTTPException(status_code=500, detail="Internal LLM Processing Error")
 
-# --- HTTP GET ENDPOINT ---
+
+# =====================================================================================
+# HAQFINDER — ONE-SHOT VOICE INPUT FOR THE CHAT MIC BUTTON
+# The mic button in HaqFinder wasn't wired to anything before. This records one clip
+# client-side, uploads it whole (so it's always a valid standalone file — no streaming
+# fragmentation issue here since it's a single short recording), transcribes it, and
+# hands the text back so the frontend can drop it into the message input for review.
+# =====================================================================================
+@app.post("/api/transcribe")
+async def transcribe_single_clip(audio: UploadFile = File(...), lang: str = Form("en")):
+    try:
+        audio_bytes = await audio.read()
+        if len(audio_bytes) < MIN_AUDIO_BYTES:
+            return {"text": ""}
+        clean_text = transcribe_audio_bytes(audio_bytes, lang)
+        if is_probable_hallucination(clean_text):
+            return {"text": ""}
+        return {"text": clean_text}
+    except Exception as e:
+        print(f"HaqFinder Voice Transcription Failure: {e}")
+        raise HTTPException(status_code=500, detail="Transcription failed")
+
+
+# =====================================================================================
+# BOLDO SCRIBE — REAL LEGAL DRAFT FROM THE ACTUAL TRANSCRIPT
+# Previously this was a hardcoded paragraph with only the name swapped in, regardless of
+# what was actually said. This drafts from the real narrated account instead.
+# =====================================================================================
+@app.post("/api/boldo/draft")
+async def generate_boldo_draft(request: BoldoDraftRequest):
+    try:
+        effective_name = request.name.strip() if request.name and request.name.strip() else "[Complainant Name]"
+        clean_transcript = request.transcript.strip()
+
+        if not clean_transcript:
+            raise HTTPException(status_code=400, detail="Empty transcript")
+
+        system_prompt = (
+            "You are Saheli's legal drafting assistant. You write formal, court-ready domestic "
+            "violence / cruelty grievance letters for Indian authorities, based ONLY on a "
+            "survivor's own spoken account. Use only the specific facts, incidents, and dates she "
+            "actually mentioned — never invent details she did not say. Structure it as a formal "
+            "letter addressed 'To, The Station House Officer (SHO), [Jurisdiction Police Station]', "
+            "citing IPC Section 498A (Domestic Cruelty) and the Protection of Women from Domestic "
+            f"Violence Act, 2005 (PWDVA) where relevant. Write in first person as the complainant, "
+            f"{effective_name}. Respond with ONLY the letter text — no preamble, no explanation, no "
+            f"markdown formatting. Write it in the language matching this code: '{request.language}' "
+            "(en=English, hi=Hindi, mr=Marathi, gu=Gujarati)."
+        )
+
+        completion = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Here is my spoken account:\n\n{clean_transcript}"}
+            ],
+            temperature=0.3,
+            max_tokens=900,
+        )
+        draft_text = completion.choices[0].message.content.strip()
+        return {"draft": draft_text}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"BolDo Draft Generation Failure: {e}")
+        raise HTTPException(status_code=500, detail="Draft generation failed")
+
+
+# =====================================================================================
+# SAFEMODE: 24-HOUR LOG HISTORY
+# =====================================================================================
 @app.get("/api/safemode/logs/{session_id}")
 async def get_transient_logs(session_id: str):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-
         twenty_four_hours_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
-
-        query = """
+        cursor.execute("""
             SELECT log_text as text, created_at as timestamp
             FROM safemode_logs
             WHERE session_id = %s AND created_at >= %s
             ORDER BY created_at ASC;
-        """
-        cursor.execute(query, (session_id, twenty_four_hours_ago))
+        """, (session_id, twenty_four_hours_ago))
         logs = cursor.fetchall()
-
         cursor.close()
         conn.close()
         return logs
@@ -225,88 +305,99 @@ async def get_transient_logs(session_id: str):
         print(f"Database Fetch Crash: {e}")
         return []
 
-# --- WEBSOCKET ENDPOINT (Explicitly attached to app root to eliminate 404s) ---
-# Accepts an optional ?lang= query param (en/hi/gu/mr) from the frontend's active language
-# selector. This is used both by SafeMode and BolDo Scribe, since both stream audio here.
-@app.websocket("/ws/safemode/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str, lang: Optional[str] = None):
-    await websocket.accept()
-    audio_buffer = bytearray()
-    whisper_lang = lang if lang in SUPPORTED_WHISPER_LANGS else None
-    print(f"WebSocket Connected Session: {session_id} | lang hint: {whisper_lang or 'auto'}")
 
-    # Raised from 48000 -> 96000 bytes: each Whisper call now gets roughly twice as much
-    # audio context, which noticeably cuts down on the "single word" / hallucinated-language
-    # transcripts that come from feeding the model very short, low-context clips.
-    CHUNK_THRESHOLD_BYTES = 96000
+# =====================================================================================
+# SAFEMODE WEBSOCKET
+# The frontend now sends one COMPLETE, independently-decodable audio clip per message
+# (it stops and restarts its recorder every few seconds instead of streaming raw
+# fragments of one long recording). That's why this endpoint transcribes each received
+# message directly, with NO buffering/accumulation — accumulating fragments was what
+# broke the WebM container structure and caused both the hallucinated text and the
+# "stops listening after ~10s" symptom.
+# =====================================================================================
+@app.websocket("/ws/safemode/{session_id}")
+async def safemode_websocket(websocket: WebSocket, session_id: str):
+    lang_hint = websocket.query_params.get("lang", "en")
+    await websocket.accept()
+    print(f"WebSocket Connected Session (SafeMode): {session_id} | lang={lang_hint}")
 
     try:
         while True:
             data = await websocket.receive_bytes()
-            audio_buffer.extend(data)
+            if len(data) < MIN_AUDIO_BYTES:
+                continue
 
-            # Process block once threshold capacity reached
-            if len(audio_buffer) >= CHUNK_THRESHOLD_BYTES:
-                try:
-                    # FIX: Read memory as an isolated, valid virtual file stream object
-                    # This completely avoids read/write permission errors on Render containers
-                    audio_stream = io.BytesIO(audio_buffer)
-                    audio_stream.name = "audio_telemetry.webm"  # Whisper requires an explicit extension signature
+            try:
+                clean_text = transcribe_audio_bytes(data, lang_hint)
+                if not clean_text or is_probable_hallucination(clean_text):
+                    continue
 
-                    transcription_kwargs = {
-                        "file": audio_stream,
-                        "model": "whisper-large-v3",
-                        "response_format": "text",
-                    }
-                    if whisper_lang:
-                        transcription_kwargs["language"] = whisper_lang
+                timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-                    transcription = groq_client.audio.transcriptions.create(**transcription_kwargs)
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO safemode_logs (session_id, log_text, created_at) VALUES (%s, %s, %s);",
+                    (session_id, clean_text, timestamp_str)
+                )
+                conn.commit()
+                cursor.close()
+                conn.close()
 
-                    clean_text = transcription.strip()
-                    if clean_text and not is_probable_hallucination(clean_text):
-                        timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                await websocket.send_json({
+                    "type": "TRANSCRIPT",
+                    "data": {"timestamp": timestamp_str, "text": clean_text}
+                })
 
-                        # Persist telemetry records into the Neon instance
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        insert_query = """
-                            INSERT INTO safemode_logs (session_id, log_text, created_at)
-                            VALUES (%s, %s, %s);
-                        """
-                        cursor.execute(insert_query, (session_id, clean_text, timestamp_str))
-                        conn.commit()
-                        cursor.close()
-                        conn.close()
-
-                        await websocket.send_json({
-                            "type": "TRANSCRIPT",
-                            "data": {
-                                "timestamp": timestamp_str,
-                                "text": clean_text
-                            }
-                        })
-
-                        # DANGER-WORD SCAN — checked on every finalized transcript chunk.
-                        # If a distress phrase is found, push a dedicated alert event so the
-                        # frontend can flash the red overlay and confirm contacts were notified.
-                        matched_keyword = detect_danger_keyword(clean_text)
-                        if matched_keyword:
-                            await websocket.send_json({
-                                "type": "DANGER_ALERT",
-                                "data": {
-                                    "timestamp": timestamp_str,
-                                    "text": clean_text,
-                                    "keyword": matched_keyword
-                                }
-                            })
-                except Exception as e:
-                    print(f"Production Processing Exception Tracker: {e}")
-                finally:
-                    audio_buffer.clear()
+                matched_keyword = detect_danger_keyword(clean_text)
+                if matched_keyword:
+                    await websocket.send_json({
+                        "type": "DANGER_ALERT",
+                        "data": {"timestamp": timestamp_str, "text": clean_text, "keyword": matched_keyword}
+                    })
+            except Exception as e:
+                print(f"SafeMode Processing Exception Tracker: {e}")
 
     except WebSocketDisconnect:
-        print(f"Session disconnected cleanly: {session_id}")
+        print(f"SafeMode session disconnected cleanly: {session_id}")
+
+
+# =====================================================================================
+# BOLDO SCRIBE WEBSOCKET
+# Deliberately separate from SafeMode: no danger-keyword scan, no DB persistence — just
+# clean transcription of each standalone segment, appended client-side into one running
+# transcript that gets sent to /api/boldo/draft once recording stops.
+# =====================================================================================
+@app.websocket("/ws/boldo/{session_id}")
+async def boldo_websocket(websocket: WebSocket, session_id: str):
+    lang_hint = websocket.query_params.get("lang", "en")
+    await websocket.accept()
+    print(f"WebSocket Connected Session (BolDo): {session_id} | lang={lang_hint}")
+
+    try:
+        while True:
+            data = await websocket.receive_bytes()
+            if len(data) < MIN_AUDIO_BYTES:
+                continue
+
+            try:
+                clean_text = transcribe_audio_bytes(data, lang_hint)
+                if not clean_text or is_probable_hallucination(clean_text):
+                    continue
+
+                await websocket.send_json({
+                    "type": "TRANSCRIPT",
+                    "data": {
+                        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        "text": clean_text
+                    }
+                })
+            except Exception as e:
+                print(f"BolDo Processing Exception Tracker: {e}")
+
+    except WebSocketDisconnect:
+        print(f"BolDo session disconnected cleanly: {session_id}")
+
 
 milestones_db = []
 
@@ -316,6 +407,5 @@ async def get_milestones():
 
 @app.post("/api/pehchaan/milestones")
 async def add_milestone(milestone: Milestone):
-    # Insert new milestones at the front of the list so they appear at the top of the feed
     milestones_db.insert(0, milestone)
     return {"status": "success", "message": "Milestone successfully broadcasted"}
