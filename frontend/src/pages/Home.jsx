@@ -309,7 +309,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
             <BentoCard num="#4" onClick={() => navigate('/pehchaan')} icon={<Users size={22} />} title="Pehchaan Network" benefit="Mutual aid & community support" desc="Connect with verified local helpers, read survival stories, and find strength in a secure peer network." />
-            <BentoCard num="#5" onClick={() => navigate('/mystory')} icon={<Fingerprint size={22} />} title="MyStory Dashboard" benefit="Track your healing journey" desc="A secure, private ledger to log milestones, manage documents, and celebrate your path from victim to survivor." />
+            <BentoCard num="#5" onClick={() => navigate('/mystory')} icon={<Fingerprint size={22} />} title="MyStory Dashboard" benefit="See the real Impact" desc="Watch the Indian states and their statistics for women safety, Identify the local shelters and also see the real impact made by Saheli" />
           </div>
 
           <div className="pt-6 max-w-3xl mx-auto text-center hidden sm:block">
