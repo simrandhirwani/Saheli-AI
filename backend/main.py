@@ -63,6 +63,35 @@ def detect_danger_keyword(text: str) -> Optional[str]:
             return keyword
     return None
 
+# --- WHISPER LANGUAGE HINTING ---
+# Groq's Whisper endpoint auto-detects language when none is given. On short/noisy clips
+# that auto-detection is unreliable and can lock onto a completely wrong language (this is
+# what was producing garbled "Urdu" style output even though nobody spoke Urdu) — giving it
+# an explicit language hint from the UI's active language selector fixes almost all of that,
+# since Whisper then only has to transcribe, not also guess the language.
+SUPPORTED_WHISPER_LANGS = {"en", "hi", "gu", "mr"}
+
+# --- HALLUCINATION FILTER ---
+# Whisper (like most speech models) sometimes "hallucinates" short stock phrases when it's
+# given silence or near-silence instead of real speech. We drop those before they ever reach
+# the transcript log or the danger-keyword scan.
+WHISPER_HALLUCINATION_PHRASES = {
+    "thank you", "thank you.", "thanks for watching", "please subscribe",
+    "subscribe", "you", "bye", "bye bye", "the end", "...", "silence",
+    "amara", "namaste",
+}
+
+def is_probable_hallucination(text: str) -> bool:
+    cleaned = text.strip().lower().strip(".!? ")
+    if not cleaned:
+        return True
+    if cleaned in WHISPER_HALLUCINATION_PHRASES:
+        return True
+    # A single very short word repeated is almost always noise, not real speech
+    if len(cleaned) <= 3 and cleaned.isalpha():
+        return True
+    return False
+
 # --- PYDANTIC SCHEMAS FOR HAQFINDER CHAT ---
 class WaitlistEntry(BaseModel):
     name: str
@@ -87,6 +116,16 @@ class Milestone(BaseModel):
     time: str
     hearts: int
     comments: int
+
+# --- HEALTH CHECK ---
+# Lightweight, no DB/API calls, so a cron-job ping (e.g. every 10-14 min) is cheap and
+# keeps the Render free-tier instance from spinning down due to inactivity.
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
 
 # --- HAQFINDER SECURE CHAT ENDPOINT ---
 
@@ -187,11 +226,19 @@ async def get_transient_logs(session_id: str):
         return []
 
 # --- WEBSOCKET ENDPOINT (Explicitly attached to app root to eliminate 404s) ---
+# Accepts an optional ?lang= query param (en/hi/gu/mr) from the frontend's active language
+# selector. This is used both by SafeMode and BolDo Scribe, since both stream audio here.
 @app.websocket("/ws/safemode/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
+async def websocket_endpoint(websocket: WebSocket, session_id: str, lang: Optional[str] = None):
     await websocket.accept()
     audio_buffer = bytearray()
-    print(f"WebSocket Connected Session: {session_id}")
+    whisper_lang = lang if lang in SUPPORTED_WHISPER_LANGS else None
+    print(f"WebSocket Connected Session: {session_id} | lang hint: {whisper_lang or 'auto'}")
+
+    # Raised from 48000 -> 96000 bytes: each Whisper call now gets roughly twice as much
+    # audio context, which noticeably cuts down on the "single word" / hallucinated-language
+    # transcripts that come from feeding the model very short, low-context clips.
+    CHUNK_THRESHOLD_BYTES = 96000
 
     try:
         while True:
@@ -199,21 +246,25 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             audio_buffer.extend(data)
 
             # Process block once threshold capacity reached
-            if len(audio_buffer) >= 48000:
+            if len(audio_buffer) >= CHUNK_THRESHOLD_BYTES:
                 try:
                     # FIX: Read memory as an isolated, valid virtual file stream object
                     # This completely avoids read/write permission errors on Render containers
                     audio_stream = io.BytesIO(audio_buffer)
                     audio_stream.name = "audio_telemetry.webm"  # Whisper requires an explicit extension signature
 
-                    transcription = groq_client.audio.transcriptions.create(
-                        file=audio_stream,
-                        model="whisper-large-v3",
-                        response_format="text"
-                    )
+                    transcription_kwargs = {
+                        "file": audio_stream,
+                        "model": "whisper-large-v3",
+                        "response_format": "text",
+                    }
+                    if whisper_lang:
+                        transcription_kwargs["language"] = whisper_lang
+
+                    transcription = groq_client.audio.transcriptions.create(**transcription_kwargs)
 
                     clean_text = transcription.strip()
-                    if clean_text:
+                    if clean_text and not is_probable_hallucination(clean_text):
                         timestamp_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
                         # Persist telemetry records into the Neon instance
