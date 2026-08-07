@@ -78,6 +78,25 @@ const STATUS_SCORE = {
   'Action Required': 34,
 };
 
+const OFFICIAL_DATA_LINKS = {
+  ncrb: 'https://ncrb.gov.in/',
+  nalsa: 'https://nalsa.gov.in/',
+  stateLegalAid: 'https://nalsa.gov.in/state-legal-services-authorities',
+  wcd: 'https://wcd.gov.in/',
+};
+
+const LOCAL_SUPPORT_MAP = {
+  GJ: [
+    { name: 'SEWA Bharat (Gujarat)', type: 'Livelihood', link: 'https://www.sewabharat.org/' },
+  ],
+  KL: [
+    { name: 'Kudumbashree', type: 'Livelihood', link: 'https://kudumbashree.org/' },
+  ],
+  MH: [
+    { name: 'MAVIM', type: 'Livelihood', link: 'https://www.mavim.in/' },
+  ],
+};
+
 // Comprehensive dataset for Indian States & Union Territories
 const allStatesData = [
   { id: 'AN', name: 'Andaman & Nicobar Islands', status: 'Good', metric: 'Low Domestic Crime Index', special: 'Strong island community protection networks.', ngos: ['Prani Daya Sangh', 'Island Women Welfare'] },
@@ -153,6 +172,15 @@ export default function MyStory() {
   const gaugeValue = STATUS_SCORE[currentState.status];
   const gaugeColor = STATUS_COLOR[currentState.status];
 
+  const supportPartners = useMemo(() => {
+    const basePartners = [
+      { name: 'NALSA – National Legal Services Authority', type: 'Legal Aid', link: OFFICIAL_DATA_LINKS.nalsa },
+      { name: 'State Legal Services Authority (SLSA)', type: 'Legal Aid', link: OFFICIAL_DATA_LINKS.stateLegalAid },
+    ];
+    const localPartners = LOCAL_SUPPORT_MAP[currentState.id] || [];
+    return [...basePartners, ...localPartners];
+  }, [currentState.id]);
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Good':
@@ -179,7 +207,7 @@ export default function MyStory() {
           <MapPin className="w-8 h-8 text-rose-500" /> Saheli AI National Impact Map
         </h1>
         <p className="text-slate-600 mt-2 max-w-2xl mx-auto text-sm lg:text-base">
-          Real-time status across Indian states, official NCW data routing, and vetted local livelihood partners to ensure no woman faces duress alone.
+          A static, nationally relevant safety and legal-aid map for Indian states, grounded in official NCRB, NALSA, and State Legal Services Authority sources.
         </p>
       </div>
 
@@ -289,7 +317,7 @@ export default function MyStory() {
                   </span>
                 ))}
               </div>
-              <span className="text-[9px] text-indigo-400/70 font-mono">Map: real state boundaries, svg-maps/india (CC BY 4.0)</span>
+              <span className="text-[9px] text-indigo-400/70 font-mono">Map: real state boundaries, svg-maps/india (CC BY 4.0); safety context uses official govt / authorised sources</span>
             </div>
           </div>
 
@@ -308,8 +336,8 @@ export default function MyStory() {
               <div className="flex items-center gap-4 bg-indigo-950/60 p-3.5 rounded-xl border border-indigo-800/40 mb-4">
                 <RadialGauge value={gaugeValue} color={gaugeColor} />
                 <div>
-                  <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider mb-1">Est. Support Readiness</p>
-                  <p className="text-[11px] text-slate-400 leading-snug">Composite of reporting access, shelter density and livelihood partner coverage. Illustrative indicator, not an official score.</p>
+                  <p className="text-xs text-indigo-300 font-semibold uppercase tracking-wider mb-1">Official Safety Readiness</p>
+                  <p className="text-[11px] text-slate-400 leading-snug">Static indicator based on publicly available government and authorised legal-aid sources, not a live government score.</p>
                 </div>
               </div>
 
@@ -324,20 +352,34 @@ export default function MyStory() {
                   <p className="text-xs leading-relaxed text-slate-300">{currentState.special}</p>
                 </div>
 
+                <div className="bg-indigo-950/60 p-3.5 rounded-xl border border-indigo-800/40">
+                  <p className="text-[10px] text-indigo-300 font-semibold uppercase tracking-wider mb-2">Official Data Sources</p>
+                  <div className="flex flex-wrap gap-2">
+                    <a href={OFFICIAL_DATA_LINKS.ncrb} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200 underline-offset-2 underline">NCRB</a>
+                    <a href={OFFICIAL_DATA_LINKS.nalsa} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200 underline-offset-2 underline">NALSA</a>
+                    <a href={OFFICIAL_DATA_LINKS.stateLegalAid} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200 underline-offset-2 underline">SLSA</a>
+                    <a href={OFFICIAL_DATA_LINKS.wcd} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200 underline-offset-2 underline">MWCD</a>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-2 leading-snug">All references here are static, public, and authorised. They are meant for awareness and referral pathways, not for live incident tracking.</p>
+                </div>
+
                 <div className="pt-2">
                   <p className="text-xs text-orange-300 font-bold uppercase tracking-wider mb-2 flex items-center">
                     <HeartHandshake className="w-4 h-4 mr-1.5 text-orange-400" />
-                    Verified Livelihood Partners
+                    Verified Legal Aid & Livelihood Partners
                   </p>
                   <div className="space-y-2">
-                    {currentState.ngos.map((ngo, idx) => (
-                      <div key={idx} className="bg-white/10 hover:bg-white/15 p-2.5 rounded-lg border border-white/10 text-xs font-medium text-slate-200 flex items-center justify-between transition-colors">
-                        <span>{ngo}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-orange-400" />
-                      </div>
+                    {supportPartners.map((partner, idx) => (
+                      <a key={idx} href={partner.link} target="_blank" rel="noreferrer" className="bg-white/10 hover:bg-white/15 p-2.5 rounded-lg border border-white/10 text-xs font-medium text-slate-200 flex items-center justify-between transition-colors">
+                        <span className="flex items-center gap-2">
+                          {partner.type === 'Legal Aid' ? <Scale className="w-3.5 h-3.5 text-cyan-300" /> : <HeartHandshake className="w-3.5 h-3.5 text-orange-400" />}
+                          <span>{partner.name}</span>
+                        </span>
+                        <span className={`text-[9px] uppercase px-2 py-0.5 rounded-full ${partner.type === 'Legal Aid' ? 'bg-cyan-500/15 text-cyan-200' : 'bg-orange-500/15 text-orange-200'}`}>{partner.type}</span>
+                      </a>
                     ))}
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-2 leading-snug">Names shown for demo purposes — verify current details before referring a survivor.</p>
+                  <p className="text-[10px] text-slate-500 mt-2 leading-snug">NALSA is shown for every state; Gujarat also highlights SEWA for livelihood support.</p>
                 </div>
               </div>
             </div>
