@@ -75,6 +75,34 @@ export default function Boldo() {
       ncwDesc: "The National Commission for Women (NCW) lets you submit this complaint directly through their online portal. Their team can take it up directly and coordinate with local police on your behalf, so you don't have to visit a station yourself.",
       ncwHelplineLabel: "NCW Women Helpline (24x7):",
       ncwButton: "Open NCW Complaint Portal",
+      supportTitle: "Free Support Options After Your PDF",
+      supportSubtitle: "Use the document to access immediate help. These are free, trusted routes for filing, legal support, and local assistance.",
+      supportCards: [
+        {
+          title: "File an e-FIR / women help desk complaint",
+          description: "Proceed to your nearest police station, women help desk, or local women’s police cell and ask for an e-FIR / Zero FIR if needed. Keep your draft and PDF ready.",
+          label: "Nearest police / help desk",
+          href: "tel:112"
+        },
+        {
+          title: "Free legal aid via NALSA",
+          description: "Ask for a free legal aid lawyer through NALSA or the District Legal Services Authority. They can help with filing, legal remedies, and next steps.",
+          label: "NALSA legal aid",
+          href: "https://nalsa.gov.in/"
+        },
+        {
+          title: "Women Helpline 181",
+          description: "Call the national women helpline for emergency support, shelter referrals, and guidance to the closest local support centre.",
+          label: "Call 181",
+          href: "tel:181"
+        },
+        {
+          title: "One Stop Centre / local NGO support",
+          description: "Ask your district administration, women support centre, or NGO for an One Stop Centre / Sakhi Centre referral. These are often free and can help immediately.",
+          label: "Local support centre",
+          href: "https://wcd.nic.in/"
+        }
+      ],
       impactTitle: "Impact Across Bharat : Voices of Change",
       impactStories: [
         { name: "Kiran S.", village: "Anand, Gujarat", text: "Speaking my native Gujarati to BolDo generated a pristine structured document that local officers immediately acknowledged." },
@@ -113,6 +141,34 @@ export default function Boldo() {
       ncwDesc: "राष्ट्रीय महिला आयोग (NCW) की वेबसाइट पर आप यह शिकायत सीधे ऑनलाइन जमा कर सकती हैं। उनकी टीम इसे सीधे संभाल सकती है और आपकी ओर से स्थानीय पुलिस से संपर्क करेगी, जिससे आपको खुद थाने जाने की जरूरत नहीं होगी।",
       ncwHelplineLabel: "NCW महिला हेल्पलाइन (24x7):",
       ncwButton: "NCW शिकायत पोर्टल खोलें",
+      supportTitle: "आपके PDF के बाद मुफ्त सहायता विकल्प",
+      supportSubtitle: "इस दस्तावेज़ को लेकर तुरंत मदद लें। ये मुफ्त, विश्वसनीय रास्ते हैं — शिकायत दर्ज करने, कानूनी सहायता और स्थानीय सहायता के लिए।",
+      supportCards: [
+        {
+          title: "e-FIR / महिला सहायता डेस्क शिकायत दर्ज करें",
+          description: "अपने निकटतम पुलिस स्टेशन, महिला सहायता डेस्क या स्थानीय महिला पुलिस सेल में जाएँ और e-FIR / Zero FIR के लिए अनुरोध करें। अपना मसौदा और PDF साथ रखें।",
+          label: "नजदीकी पुलिस / सहायता डेस्क",
+          href: "tel:112"
+        },
+        {
+          title: "NALSA से मुफ्त कानूनी सहायता",
+          description: "NALSA या जिला विधिक सेवा प्राधिकरण से मुफ्त विधिक सहायता वकील लें। वे फाइलिंग, कानूनी उपाय और आगे की प्रक्रिया में मदद कर सकते हैं।",
+          label: "NALSA कानूनी सहायता",
+          href: "https://nalsa.gov.in/"
+        },
+        {
+          title: "महिला हेल्पलाइन 181",
+          description: "आपातकालीन सहायता, आश्रय रेफरल और निकटतम स्थानीय सहायता केंद्र की जानकारी के लिए महिला हेल्पलाइन 181 पर कॉल करें।",
+          label: "181 पर कॉल करें",
+          href: "tel:181"
+        },
+        {
+          title: "One Stop Centre / स्थानीय NGO सहायता",
+          description: "अपने जिले प्रशासन, महिला सहायता केंद्र या NGO से One Stop Centre / Sakhi Centre रेफरल लें। ये अक्सर मुफ्त होते हैं और तुरंत मदद दे सकते हैं।",
+          label: "स्थानीय सहायता केंद्र",
+          href: "https://wcd.nic.in/"
+        }
+      ],
       impactTitle: "भारत भर में प्रभाव // परिवर्तन की आवाजें",
       impactStories: [
         { name: "किरण एस.", village: "आनंद, गुजरात", text: "बोल-दो को अपनी मूल गुजराती में बोलने से एक स्पष्ट संरचित दस्तावेज़ तैयार हुआ जिसे स्थानीय अधिकारियों ने तुरंत स्वीकार कर लिया।" },
@@ -151,6 +207,34 @@ export default function Boldo() {
       ncwDesc: "રાષ્ટ્રીય મહિલા આયોગ (NCW) ની વેબસાઇટ પર તમે આ ફરિયાદ સીધી ઓનલાઇન સબમિટ કરી શકો છો. તેમની ટીમ તેને સીધી હાથ પર લઈ શકે છે અને તમારા વતી સ્થાનિક પોલીસનો સંપર્ક કરશે, જેથી તમારે જાતે સ્ટેશન જવાની જરૂર નહીં પડે.",
       ncwHelplineLabel: "NCW મહિલા હેલ્પલાઇન (24x7):",
       ncwButton: "NCW ફરિયાદ પોર્ટલ ખોલો",
+      supportTitle: "તમારા PDF પછી मुफ़્ત સપોર્ટ વિકલ્પો",
+      supportSubtitle: "આ દસ્તાવેજ સાથે તાત્કાલિક დახმარા માટે આગળ વધો. આ मुफ़્ત, વિશ્વાસપાત્ર માર્ગો છે — ફરિયાદ દાખલ કરવા, કાનૂની સહાય અને સ્થાનિક સહાય માટે.",
+      supportCards: [
+        {
+          title: "e-FIR / મહિલા સહાય ડેસ્કમાં ફરિયાદ દાખલ કરો",
+          description: "તમારા નજીકના પોલીસ સ્ટેશન, મહિલા સહાય ડેસ્ક અથવા સ્થાનિક મહિલા પોલીસ સેલમાં જાઓ અને e-FIR / Zero FIR માટે માંગ કરો. તમારો ડ્રાફ્ટ અને PDF સાથે રાખો.",
+          label: "નજીકનો પોલીસ / સહાય ડેસ્ક",
+          href: "tel:112"
+        },
+        {
+          title: "NALSAથી મફત કાનૂની સહાય",
+          description: "NALSA અથવા જિલ્લા કાનૂની સેવાઓ પ્રाधिकરણથી મફત કાનૂની સહાય વકીલ પૂછો. તેઓ ફાઇલિંગ, કાનૂની ઉપાય અને આગળની કાર્યવાહી માટે મદદ કરી શકે છે.",
+          label: "NALSA કાનૂની સહાય",
+          href: "https://nalsa.gov.in/"
+        },
+        {
+          title: "મહિલા હેલ્પલાઇન 181",
+          description: "તાત્કાલિક સહાય, આશ્રય રેફરલ અને નજીકના સ્થાનિક’aide કેન્દ્ર માટે મહિલા હેલ્પલાઇન 181 પર કૉલ કરો.",
+          label: "181 પર કૉલ કરો",
+          href: "tel:181"
+        },
+        {
+          title: "One Stop Centre / સ્થાનિક NGO સહાય",
+          description: "તમારા જિલ્લા વહીવટ, મહિલા સહાય કેન્દ્ર અથવા NGOથી One Stop Centre / Sakhi Centre રેફરલ માંગો. આ ઘણીવાર મફત હોય છે અને ત્વરિત સહાય આપી શકે છે.",
+          label: "સ્થાનિક સહાય કેન્દ્ર",
+          href: "https://wcd.nic.in/"
+        }
+      ],
       impactTitle: "સમગ્ર ભારતમાં પ્રભાવ // પરિવર્તનના અવાજો",
       impactStories: [
         { name: "કિરણ એસ.", village: "આણંદ, ગુજરાત", text: "મારી માતૃભાષા ગુજરાતીમાં બોલવાથી એક સરસ સત્તાવાર દસ્તાવેજ તૈયાર થયો જે સ્થાનિક અધિકારીઓએ તરત જ સ્વીકારી લીધો." },
@@ -189,6 +273,34 @@ export default function Boldo() {
       ncwDesc: "राष्ट्रीय महिला आयोग (NCW) च्या वेबसाइटवर तुम्ही ही तक्रार थेट ऑनलाइन सबमिट करू शकता. त्यांची टीम ती थेट हाताळू शकते आणि तुमच्या वतीने स्थानिक पोलिसांशी संपर्क साधेल, त्यामुळे तुम्हाला स्वतः स्टेशनला जाण्याची गरज नाही.",
       ncwHelplineLabel: "NCW महिला हेल्पलाइन (24x7):",
       ncwButton: "NCW तक्रार पोर्टल उघडा",
+      supportTitle: "तुमच्या PDF नंतर मोफत सहाय्य पर्याय",
+      supportSubtitle: "हा दस्तऐवज घेऊन त्वरित मदत घ्या. हे मोफत, विश्वासार्ह मार्ग आहेत — तक्रार नोंदवण्यासाठी, कायदेशीर सहाय्य आणि स्थानिक मदतीसाठी.",
+      supportCards: [
+        {
+          title: "e-FIR / महिला सहाय्य डेस्क तक्रार नोंदवा",
+          description: "तुमच्या जवळच्या पोलीस स्टेशन, महिला सहाय्य डेस्क किंवा स्थानिक महिला पोलीस सेलमध्ये जा आणि e-FIR / Zero FIRसाठी विनंती करा. तुमचा मसुदा आणि PDF सोबत ठेवा.",
+          label: "जवळचा पोलीस / सहाय्य डेस्क",
+          href: "tel:112"
+        },
+        {
+          title: "NALSAकडून मोफत कायदेशीर सहाय्य",
+          description: "NALSA किंवा जिल्हा विधिक सेवा प्राधिकरणातून मोफत कायदेशीर सहाय्य वकील मागा. ते नोंदणी, कायदेशीर उपाय आणि पुढील प्रक्रिया यामध्ये मदत करू शकतात.",
+          label: "NALSA कायदेशीर सहाय्य",
+          href: "https://nalsa.gov.in/"
+        },
+        {
+          title: "महिला हेल्पलाइन 181",
+          description: "तातडीची मदत, आश्रय संदर्भ आणि जवळचे स्थानिक सहाय्य केंद्रासाठी महिला हेल्पलाइन 181 वर कॉल करा.",
+          label: "181 वर कॉल करा",
+          href: "tel:181"
+        },
+        {
+          title: "One Stop Centre / स्थानिक NGO सहाय्य",
+          description: "तुमच्या जिल्हा प्रशासन, महिला सहाय्य केंद्र किंवा NGOकडून One Stop Centre / Sakhi Centre संदर्भ मागा. हे अनेकदा मोफत असतात आणि त्वरित मदत देऊ शकतात.",
+          label: "स्थानिक सहाय्य केंद्र",
+          href: "https://wcd.nic.in/"
+        }
+      ],
       impactTitle: "भारतभरात प्रभाव // परिवर्तनाचे आवाज",
       impactStories: [
         { name: "किरण एस.", village: "आनंद, गुजरात", text: "बोल-दो मध्ये माझ्या मातृभाषेत (गुजराती) बोलल्यामुळे एक स्पष्ट कायदेशीर दस्तऐवज तयार झाला जो स्थानिक अधिकाऱ्यांनी त्वरित स्वीकारला." },
@@ -595,54 +707,87 @@ export default function Boldo() {
     </div>
   );
 
-  const renderFinal = () => (
-    <div className="max-w-3xl mx-auto space-y-6 animate-[slideUp_0.2s_ease-out]">
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 sm:p-12 shadow-sm text-center">
-        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="text-emerald-600" size={32} />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900 font-serif mb-2">{currentContent.finalTitle}</h2>
-        <p className="text-slate-500 text-sm font-medium mb-10">{currentContent.finalSub}</p>
+  const renderFinal = () => {
+    const supportCards = currentContent.supportCards || content.en.supportCards;
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={generateInstantPDF}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+    return (
+      <div className="max-w-3xl mx-auto space-y-6 animate-[slideUp_0.2s_ease-out]">
+        <div className="bg-white border border-slate-200 rounded-[2rem] p-8 sm:p-12 shadow-sm text-center">
+          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="text-emerald-600" size={32} />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 font-serif mb-2">{currentContent.finalTitle}</h2>
+          <p className="text-slate-500 text-sm font-medium mb-10">{currentContent.finalSub}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={generateInstantPDF}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+            >
+              <Download size={18} /> {currentContent.btnDownload}
+            </button>
+            <button onClick={() => { setStep('entry'); setTranscript(""); setLegalDraft(""); setUserName(""); setDraftError(false); }} className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-rose-200 transition-all">
+              <Trash2 size={18} /> {currentContent.btnDeleteReset}
+            </button>
+          </div>
+        </div>
+
+        {/* NCW ONLINE COMPLAINT PORTAL AWARENESS CARD — shown after the draft/PDF is ready */}
+        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-8 shadow-sm text-left">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
+              <ExternalLink className="text-rose-500" size={18} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-serif">{currentContent.ncwTitle}</h3>
+            </div>
+          </div>
+          <p className="text-slate-600 text-sm font-medium leading-relaxed mb-5">{currentContent.ncwDesc}</p>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-5">
+            <PhoneCall size={14} className="text-rose-500" />
+            <span>{currentContent.ncwHelplineLabel} {NCW_HELPLINE}</span>
+          </div>
+          <a
+            href={NCW_PORTAL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-flex bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-xl items-center justify-center gap-2 transition-all shadow-md"
           >
-            <Download size={18} /> {currentContent.btnDownload}
-          </button>
-          <button onClick={() => { setStep('entry'); setTranscript(""); setLegalDraft(""); setUserName(""); setDraftError(false); }} className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-rose-200 transition-all">
-            <Trash2 size={18} /> {currentContent.btnDeleteReset}
-          </button>
+            {currentContent.ncwButton} <ExternalLink size={16} />
+          </a>
         </div>
-      </div>
 
-      {/* NCW ONLINE COMPLAINT PORTAL AWARENESS CARD — shown after the draft/PDF is ready */}
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-8 shadow-sm text-left">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center shrink-0">
-            <ExternalLink className="text-rose-500" size={18} />
+        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-8 shadow-sm text-left">
+          <div className="mb-5">
+            <h3 className="text-base font-bold text-slate-900 font-serif">{currentContent.supportTitle}</h3>
+            <p className="text-slate-500 text-sm font-medium mt-1">{currentContent.supportSubtitle}</p>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900 font-serif">{currentContent.ncwTitle}</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {supportCards.map((card) => (
+              <a
+                key={card.title}
+                href={card.href}
+                target={card.href.startsWith('http') ? '_blank' : undefined}
+                rel={card.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="bg-slate-50 border border-slate-200 rounded-2xl p-4 hover:border-rose-200 hover:bg-rose-50 transition-colors block"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Free help</p>
+                    <h4 className="text-sm font-bold text-slate-900 leading-relaxed">{card.title}</h4>
+                  </div>
+                  <ExternalLink size={15} className="text-rose-500 mt-1 shrink-0" />
+                </div>
+                <p className="text-slate-600 text-xs font-medium leading-relaxed mt-3">{card.description}</p>
+                <div className="mt-4 inline-flex bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider">{card.label}</div>
+              </a>
+            ))}
           </div>
         </div>
-        <p className="text-slate-600 text-sm font-medium leading-relaxed mb-5">{currentContent.ncwDesc}</p>
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-5">
-          <PhoneCall size={14} className="text-rose-500" />
-          <span>{currentContent.ncwHelplineLabel} {NCW_HELPLINE}</span>
-        </div>
-        <a
-          href={NCW_PORTAL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full inline-flex bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-xl items-center justify-center gap-2 transition-all shadow-md"
-        >
-          {currentContent.ncwButton} <ExternalLink size={16} />
-        </a>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] text-slate-800 pt-32 pb-20 px-4 sm:px-6 lg:px-8 antialiased">
