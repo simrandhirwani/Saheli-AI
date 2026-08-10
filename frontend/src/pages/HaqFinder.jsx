@@ -58,7 +58,7 @@ export default function HaqFinder() {
       draftBtn: "Draft Legal Grievance",
       errorMsg: "Network error connecting to the backend server.",
       voiceErrorMsg: "Couldn't access the microphone. Please check your browser's mic permission.",
-      scopeMessage: "I can help with women’s legal rights, safety protections, complaint drafting, and local aid pathways under Indian law. Ask about BNS 2023, PWDVA 2005, POSH, maternity rights, dowry, legal aid, or police complaint steps — not unrelated general chat.",
+      scopeMessage: "I can help with women’s safety, legal rights, education, scholarships, jobs, health, welfare schemes, and local aid pathways under Indian law. Ask about domestic violence, POSH, PWDVA, education support, government schemes, maternity rights, legal aid, or complaint steps — not unrelated general chat.",
       cards: [
         { title: "Protection from Domestic Violence", desc: "Right to safe housing, protection orders, and medical aid.", code: "PWDVA Act, 2005" },
         { title: "Right to Equal Remuneration", desc: "Constitutional mandate guaranteeing equal pay for identical work profiles.", code: "Equal Remuneration Act" },
@@ -156,23 +156,23 @@ export default function HaqFinder() {
 
     const blockedPatterns = [
       /^hi\b/, /^hello\b/, /^hey\b/, /^good (morning|afternoon|evening)\b/,
-      /\bhow are you\b|\bwhat's up\b|\bhow was your day\b|\bwho are you\b|\bwhat is your name\b|\bcan you chat\b|\b tell me a joke\b/
+      /\bhow are you\b|\bwhat's up\b|\bhow was your day\b|\bwho are you\b|\bwhat is your name\b|\bcan you chat\b|\b tell me a joke\b|\bhow to bake\b|\brecipe\b|\bcake\b/
     ];
 
     if (blockedPatterns.some(pattern => pattern.test(cleaned))) return false;
 
     const allowedPatterns = [
-      'women', 'woman', 'domestic', 'violence', 'pwdva', 'bns', '498a', '85', '86', 'legal', 'law', 'rights', 'police', 'complaint', 'grievance', 'dowry', 'maternity', 'posh', 'harassment', 'shelter', 'aid', 'abortion', 'maintenance', 'property', 'inheritance', 'safety', 'help', 'sakhi', 'ngo', 'helpline', 'support', 'e-fir', 'zero fir', 'police station', 'legal services'
+      'women', 'woman', 'girl', 'girls', 'daughter', 'wife', 'mother', 'motherhood', 'domestic', 'violence', 'pwdva', 'bns', '498a', '85', '86', 'legal', 'law', 'rights', 'police', 'complaint', 'grievance', 'dowry', 'maternity', 'posh', 'harassment', 'shelter', 'aid', 'abortion', 'maintenance', 'property', 'inheritance', 'safety', 'help', 'support', 'sakhi', 'ngo', 'helpline', 'education', 'school', 'college', 'scholarship', 'student', 'study', 'career', 'skill', 'job', 'employment', 'health', 'mental health', 'scheme', 'welfare', 'govt', 'government', 'nutrition', 'training', 'self-help', 'e-fir', 'zero fir', 'police station', 'legal services'
     ];
 
     return allowedPatterns.some(keyword => cleaned.includes(keyword));
   };
 
   useEffect(() => {
-    let initialGreeting = "Welcome to Saheli HaqFinder. Ask about women’s legal rights, safety protections, complaint drafting, or local aid pathways.";
-    if (lang === 'hi') initialGreeting = "सहेली हकफ़ाइंडर में आपका स्वागत है। महिलाओं के कानूनी अधिकार, सुरक्षा, शिकायत तैयार करने, या स्थानीय सहायता विकल्पों के बारे में पूछें।";
-    if (lang === 'gu') initialGreeting = "સહેલી હકફાઇન્ડરBienvenue. મહિલાઓના કાનૂની અધિકારો, સુરક્ષા, ફરિયાદ ડ્રાફ્ટિંગ અથવા સ્થાનિક સહાય વિશે પૂછો.";
-    if (lang === 'mr') initialGreeting = "सहेली हकफाइंडरमध्ये आपले स्वागत आहे. महिलांच्या कायदेशीर हक्क, सुरक्षा, तक्रार मसुदा किंवा स्थानिक मदत याबद्दल विचारा.";
+    let initialGreeting = "Welcome to Saheli HaqFinder. Ask about women’s safety, legal rights, education, welfare schemes, health, jobs, or local aid pathways.";
+    if (lang === 'hi') initialGreeting = "सहेली हकफ़ाइंडर में आपका स्वागत है। महिलाएं के लिए सुरक्षा, कानूनी अधिकार, शिक्षा, सरकारी योजनाएं, स्वास्थ्य, रोजगार या स्थानीय सहायता के बारे में पूछें।";
+    if (lang === 'gu') initialGreeting = "સહેલી હકફાઇન્ડરમાં આપનું સ્વાગત છે. મહિલાઓ માટે સુરક્ષા, કાનૂની અધિકારો, શિક્ષણ, કલ્યાણ યોજના, આરોગ્ય, નોકરી અથવા સ્થાનિક સહાય વિશે પૂછો.";
+    if (lang === 'mr') initialGreeting = "सहेली हकफाइंडरमध्ये आपले स्वागत आहे. महिलांसाठी सुरक्षा, कायदेशीर हक्क, शिक्षण, कल्याण योजना, आरोग्य, रोजगार किंवा स्थानिक मदत याबद्दल विचारा.";
 
     if (messages.length === 0) {
       setMessages([{ id: Date.now(), text: initialGreeting, isBot: true, hasAction: false }]);

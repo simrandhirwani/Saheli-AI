@@ -2,6 +2,7 @@
 import { Mic, Shield, AlertTriangle, Plus, Trash2, User, Smartphone, Activity, Info } from 'lucide-react';
 import { useLanguage } from '../App';
 import { API_BASE_URL } from '../config';
+import { jsPDF } from 'jspdf';
 
 export default function SafeMode() {
   const { lang } = useLanguage();
@@ -13,6 +14,10 @@ export default function SafeMode() {
 
   const [liveLogs, setLiveLogs] = useState([]);
   const [systemLog, setSystemLog] = useState("");
+  const [location, setLocation] = useState(null);
+  const [evidenceEntries, setEvidenceEntries] = useState([]);
+  const [offlineQueue, setOfflineQueue] = useState([]);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
 
   // Refs
   const socketRef = useRef(null);
@@ -101,6 +106,76 @@ export default function SafeMode() {
 
   const currentContent = labels[lang] || labels['en'];
 
+  const sha256 = async (text) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const persistEvidenceEntry = async (eventText, evidenceType = 'incident-log') => {
+    const timestamp = new Date().toISOString();
+    const payload = {
+      sessionId,
+      evidenceType,
+      eventText,
+      location,
+      timestamp,
+      source: 'Saheli SafeMode'
+    };
+    const hash = await sha256(JSON.stringify(payload));
+    const entry = {
+      id: Date.now(),
+      timestamp,
+      evidenceType,
+      eventText,
+      location,
+      hash,
+      queuedLocally: !navigator.onLine || !API_BASE_URL
+    };
+
+    setEvidenceEntries(prev => [entry, ...prev].slice(0, 5));
+
+    if (!navigator.onLine || !API_BASE_URL) {
+      const existing = JSON.parse(localStorage.getItem('saheli_evidence_queue') || '[]');
+      localStorage.setItem('saheli_evidence_queue', JSON.stringify([entry, ...existing].slice(0, 20)));
+      setOfflineQueue([entry, ...existing].slice(0, 20));
+      setSystemLog('Offline queue activated. Evidence is secured locally until network is restored.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/safemode/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          evidence_type: evidenceType,
+          event_text: eventText,
+          raw_payload: payload,
+          coordinates: location,
+          content_hash: hash,
+          metadata: 'Bharatiya Sakshya Adhiniyam evidence lock'
+        })
+      });
+      const data = await response.json();
+      if (data && data.status === 'queued_locally') {
+        const existing = JSON.parse(localStorage.getItem('saheli_evidence_queue') || '[]');
+        localStorage.setItem('saheli_evidence_queue', JSON.stringify([entry, ...existing].slice(0, 20)));
+        setOfflineQueue([entry, ...existing].slice(0, 20));
+        setSystemLog('Backend unavailable. Evidence queued offline for later sync.');
+      } else {
+        setSystemLog('Evidence certificate locked and hash stored.');
+      }
+    } catch (error) {
+      const existing = JSON.parse(localStorage.getItem('saheli_evidence_queue') || '[]');
+      localStorage.setItem('saheli_evidence_queue', JSON.stringify([entry, ...existing].slice(0, 20)));
+      setOfflineQueue([entry, ...existing].slice(0, 20));
+      setSystemLog('Network unavailable. Evidence secured in the local queue.');
+    }
+  };
+
   // FETCH PERSISTED 24-HOUR LOGS FROM NEON ON MOUNT
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/safemode/logs/${sessionId}`)
@@ -114,6 +189,17 @@ export default function SafeMode() {
         }
       })
       .catch(() => setSystemLog(currentContent.logReady));
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setLocation(null),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    const queued = JSON.parse(localStorage.getItem('saheli_evidence_queue') || '[]');
+    setOfflineQueue(queued);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -191,7 +277,7 @@ export default function SafeMode() {
 
     ws.onerror = (err) => console.error("[SafeMode] WebSocket error:", err);
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       const response = JSON.parse(event.data);
       if (response.type === "TRANSCRIPT") {
         setLiveLogs(prev => [...prev, response.data]);
@@ -200,6 +286,7 @@ export default function SafeMode() {
       if (response.type === "DANGER_ALERT") {
         setSystemLog(currentContent.logCritical);
         triggerOverlay('auto', response.data);
+        await lockEmergencyEvent('auto-sos');
       }
     };
 
@@ -255,11 +342,82 @@ export default function SafeMode() {
   };
 
   // CORE EMERGENCY DISPATCH TRIGGER HANDLER (manual test button)
-  const handleSendSOS = () => {
+  const lockEmergencyEvent = async (reason = 'emergency-sos') => {
+    const latestLog = liveLogs.length > 0 ? liveLogs[liveLogs.length - 1]?.text : systemLog;
+    const eventText = latestLog || `Emergency service record generated at ${new Date().toISOString()}`;
+    const statusLabel = reason === 'auto-sos' ? 'Emergency SOS automatically locked' : 'Manual SOS automatically locked';
+    await persistEvidenceEntry(`${statusLabel}: ${eventText}`, reason);
+  };
+
+  const handleSendSOS = async () => {
     triggerOverlay('manual');
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       startStreamingEngine();
     }
+    await lockEmergencyEvent('manual-sos');
+  };
+
+  const exportCertificate = (entry) => {
+    const doc = new jsPDF();
+    const logText = entry.eventText || 'No captured log available';
+    const locationText = entry.location
+      ? `${entry.location.lat.toFixed(5)}, ${entry.location.lng.toFixed(5)}`
+      : 'Location unavailable';
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, 0, 210, 34, 'F');
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Saheli SafeMode', 14, 18);
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Emergency Evidence Certificate', 14, 28);
+
+    doc.setTextColor(51, 65, 85);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Generated by Saheli app for police / authority review', 14, 42);
+    doc.line(14, 46, 196, 46);
+
+    let y = 58;
+    const rows = [
+      ['Document type', 'Emergency Evidence Record'],
+      ['App', 'Saheli SafeMode'],
+      ['Captured at', new Date(entry.timestamp).toLocaleString()],
+      ['Location', locationText],
+      ['Status', entry.queuedLocally ? 'Queued locally until connection restored' : 'Stored in app / backend record']
+    ];
+
+    rows.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label + ':', 14, y);
+      doc.setFont('helvetica', 'normal');
+      const wrappedValue = doc.splitTextToSize(String(value), 130);
+      doc.text(wrappedValue, 62, y);
+      y += 10 + Math.max(0, wrappedValue.length - 1) * 5;
+    });
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Captured log:', 14, y + 8);
+    doc.setFont('helvetica', 'normal');
+    const wrappedLog = doc.splitTextToSize(logText, 170);
+    doc.text(wrappedLog, 14, y + 16);
+
+    const logEndY = y + 16 + wrappedLog.length * 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text('SHA-256 Hash:', 14, Math.min(logEndY + 18, 245));
+    doc.setFont('helvetica', 'normal');
+    const wrappedHash = doc.splitTextToSize(entry.hash, 170);
+    doc.text(wrappedHash, 14, Math.min(logEndY + 26, 253));
+
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(71, 85, 105);
+    doc.text('This record is a proof document generated by the Saheli app and intended for review by police, legal support, or trusted support services.', 14, 280, { maxWidth: 180 });
+
+    doc.save(`saheli-safemode-evidence-${Date.now()}.pdf`);
   };
 
   const [contacts, setContacts] = useState([
@@ -373,7 +531,7 @@ export default function SafeMode() {
 
       {/* CONTACTS CARD BASE */}
       <div className="bg-white border border-slate-200 rounded-[2rem] p-6 sm:p-8 space-y-6 shadow-sm max-w-3xl mx-auto">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3">
           <div className="text-left">
             <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider font-serif">{currentContent.contactsTitle}</h3>
             <p className="text-slate-500 text-xs font-medium mt-0.5">{currentContent.contactsSub}</p>
@@ -384,6 +542,51 @@ export default function SafeMode() {
         <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-left">
           <Info size={14} className="text-amber-600 mt-0.5 flex-shrink-0" />
           <p className="text-[11px] text-amber-800 font-medium leading-relaxed">{currentContent.disclaimer}</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Evidence Locker</p>
+              <h4 className="font-bold text-slate-900 text-sm">Automatic SOS Timeline / Proof Record</h4>
+            </div>
+            <span className="bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-wider">Auto-Locked</span>
+          </div>
+
+          <p className="text-[11px] text-slate-600">This record is created automatically the moment the SOS is dispatched to emergency contacts and is kept in the timeline for review.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px] text-slate-600">
+            <div className="bg-white border border-slate-200 rounded-xl p-3">
+              <span className="font-bold uppercase tracking-wider text-slate-500 block mb-1">Location</span>
+              {location ? `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}` : 'Location unavailable — device permissions not granted'}
+            </div>
+            <div className="bg-white border border-slate-200 rounded-xl p-3">
+              <span className="font-bold uppercase tracking-wider text-slate-500 block mb-1">Queue</span>
+              {offlineQueue.length > 0 ? `${offlineQueue.length} pending locally` : 'No pending items'}
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+            {evidenceEntries.length === 0 ? (
+              <p className="text-[11px] text-slate-500 italic">No evidence locked yet. Trigger an SOS or lock the current transcript checkpoint to create a hash-backed proof certificate.</p>
+            ) : (
+              evidenceEntries.map((entry) => (
+                <div key={entry.id} className="bg-white border border-slate-200 rounded-xl p-3">
+                  <div className="flex justify-between items-center gap-3 mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600">{entry.evidenceType}</span>
+                    <span className="text-[9px] text-slate-400">{new Date(entry.timestamp).toLocaleString()}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-700 leading-relaxed">{entry.eventText}</p>
+                  <p className="mt-2 text-[9px] font-mono text-slate-500 break-all">SHA-256: {entry.hash}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button type="button" onClick={() => setSelectedCertificate(entry)} className="bg-slate-900 text-white px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider">View Certificate</button>
+                    <button type="button" onClick={() => exportCertificate(entry)} className="border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider">Export</button>
+                  </div>
+                  {entry.queuedLocally && <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-amber-600">Queued locally while offline</p>}
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -408,6 +611,44 @@ export default function SafeMode() {
       </div>
 
       {/* CONTACT ADD MODAL */}
+      {selectedCertificate && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl w-full max-w-xl space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Evidence Certificate</p>
+                <h3 className="text-lg font-bold text-slate-900 font-serif">Hash-backed proof record</h3>
+              </div>
+              <button type="button" onClick={() => setSelectedCertificate(null)} className="text-slate-500 hover:text-slate-800 text-sm font-bold">Close</button>
+            </div>
+
+            <div className="space-y-3 text-left text-sm text-slate-700">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Captured at</p>
+                <p>{new Date(selectedCertificate.timestamp).toLocaleString()}</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Actual log captured</p>
+                <p>{selectedCertificate.eventText}</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Location</p>
+                <p>{selectedCertificate.location ? `${selectedCertificate.location.lat.toFixed(5)}, ${selectedCertificate.location.lng.toFixed(5)}` : 'Unavailable'}</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">SHA-256 hash</p>
+                <p className="break-all font-mono text-[11px]">{selectedCertificate.hash}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => exportCertificate(selectedCertificate)} className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider">Download PDF</button>
+              <button type="button" onClick={() => setSelectedCertificate(null)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <form onSubmit={handleAddContact} className="bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl w-full max-w-md space-y-5 shadow-2xl animate-[slideUp_0.2s_ease-out]">

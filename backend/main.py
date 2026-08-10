@@ -145,6 +145,15 @@ class BoldoDraftRequest(BaseModel):
     transcript: str
     language: str
 
+class SafeModeEvidenceEntry(BaseModel):
+    session_id: str
+    evidence_type: str
+    event_text: str
+    raw_payload: Dict[str, object] = {}
+    coordinates: Optional[Dict[str, float]] = None
+    content_hash: str
+    metadata: Optional[str] = None
+
 # =====================================================================================
 # HEALTH CHECK — point an uptime cron (UptimeRobot, cron-job.org, etc) at this every
 # 10-14 minutes so Render's free tier doesn't spin down before/during your demo.
@@ -303,6 +312,66 @@ async def get_transient_logs(session_id: str):
         return logs
     except Exception as e:
         print(f"Database Fetch Crash: {e}")
+        return []
+
+
+@app.post("/api/safemode/evidence")
+async def store_safemode_evidence(entry: SafeModeEvidenceEntry):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS safemode_evidence (
+                id SERIAL PRIMARY KEY,
+                session_id VARCHAR(255),
+                evidence_type VARCHAR(50),
+                event_text TEXT,
+                raw_payload JSONB DEFAULT '{}',
+                coordinates JSONB DEFAULT '{}',
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                content_hash VARCHAR(128),
+                metadata TEXT
+            );
+        """)
+        cursor.execute("""
+            INSERT INTO safemode_evidence
+            (session_id, evidence_type, event_text, raw_payload, coordinates, content_hash, metadata)
+            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (
+            entry.session_id,
+            entry.evidence_type,
+            entry.event_text,
+            entry.raw_payload,
+            entry.coordinates,
+            entry.content_hash,
+            entry.metadata,
+        ))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"status": "stored", "hash": entry.content_hash}
+    except Exception as e:
+        print(f"SafeMode Evidence Store Failed: {e}")
+        return {"status": "queued_locally", "hash": entry.content_hash}
+
+
+@app.get("/api/safemode/evidence/{session_id}")
+async def get_safemode_evidence(session_id: str):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT id, session_id, evidence_type, event_text, raw_payload, coordinates, created_at, content_hash, metadata
+            FROM safemode_evidence
+            WHERE session_id = %s
+            ORDER BY created_at DESC;
+        """, (session_id,))
+        records = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return records
+    except Exception as e:
+        print(f"SafeMode Evidence Fetch Failed: {e}")
         return []
 
 
