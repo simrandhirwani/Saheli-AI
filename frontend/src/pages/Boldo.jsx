@@ -46,7 +46,7 @@ export default function Boldo() {
   const content = {
     en: {
       title: "BolDo Scribe",
-      subtitle: "Tell your story naturally. We will convert it into a formal, court-ready legal document.",
+      subtitle: "Tell your story naturally. We turn it into a structured complaint draft / pre-FIR statement for safer police intake and legal follow-up.",
       consentTitle: "Your Safety & Privacy First",
       consentPoints: [
         "Your recording is private and processed securely.",
@@ -60,12 +60,12 @@ export default function Boldo() {
       btnExit: "Exit Safely Now",
       reviewTitle: "Review Your Statement",
       originalText: "Your Spoken Words",
-      aiText: "Formal Legal Draft",
-      legalRef: "References: IPC Section 498A (Domestic Cruelty), PWDVA Act 2005",
+      aiText: "Structured Complaint Draft",
+      legalRef: "References: BNS Sections 85 & 86 (cruelty by husband/relatives), PWDVA Act 2005, Maternity Benefit Act",
       btnAccept: "Accept & Generate PDF",
       btnRedo: "Redo Recording",
-      finalTitle: "Draft Generated Successfully",
-      finalSub: "Your formal grievance is ready to be submitted to the authorities.",
+      finalTitle: "Structured Complaint Draft Ready",
+      finalSub: "This is a pre-FIR statement / structured complaint draft, not a substitute for police registration. It helps reduce under-recording and makes officer intake easier where e-FIR / Zero FIR pathways are available.",
       btnDownload: "Download PDF",
       btnDeleteReset: "Delete & Reset",
       draftingLabel: "Drafting your formal statement from what you said...",
@@ -98,12 +98,12 @@ export default function Boldo() {
       btnExit: "अभी सुरक्षित रूप से बाहर निकलें",
       reviewTitle: "अपने बयान की समीक्षा करें",
       originalText: "आपके बोले गए शब्द",
-      aiText: "औपचारिक कानूनी मसौदा",
-      legalRef: "संदर्भ: IPC धारा 498A (घरेलू क्रूरता), PWDVA अधिनियम 2005",
+      aiText: "संरचित शिकायत मसौदा",
+      legalRef: "संदर्भ: BNS धारा 85 और 86 (पति/परिवार द्वारा शोषण), PWDVA अधिनियम 2005, मातृत्व लाभ अधिनियम",
       btnAccept: "स्वीकार करें और दस्तावेज़ बनाएं",
       btnRedo: "फिर से रिकॉर्ड करें",
-      finalTitle: "मसौदा सफलतापूर्वक तैयार हुआ",
-      finalSub: "आपकी औपचारिक शिकायत अधिकारियों को सौंपे जाने के लिए तैयार है।",
+      finalTitle: "संरचित शिकायत मसौदा तैयार है",
+      finalSub: "यह एक pre-FIR बयान / संरचित शिकायत मसौदा है, न कि पुलिस पंजीकरण का विकल्प। यह कम-अनुक्रमण और अधिकारी द्वारा रिकॉर्डिंग मे मदद करता है जहाँ e-FIR / Zero FIR उपलब्ध हो।",
       btnDownload: "PDF डाउनलोड करें",
       btnDeleteReset: "हटाएं और फिर से शुरू करें",
       draftingLabel: "आपने जो बताया उसके आधार पर औपचारिक बयान तैयार किया जा रहा है...",
@@ -567,7 +567,7 @@ export default function Boldo() {
 
         <div className="bg-white border-2 border-slate-900 rounded-[2rem] p-6 sm:p-8 shadow-md flex flex-col h-[500px] relative overflow-hidden">
           <div className={`absolute top-0 right-0 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-bl-xl border-b border-l ${draftError ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>
-            {draftError ? 'Needs Review' : 'Court Ready'}
+            {draftError ? 'Needs Review' : 'Structured Draft'}
           </div>
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2 text-left">
             <FileText size={16} className="text-rose-500"/> {currentContent.aiText}
@@ -577,8 +577,9 @@ export default function Boldo() {
             value={legalDraft}
             onChange={(e) => setLegalDraft(e.target.value)}
           />
-          <div className="mt-4 pt-4 border-t border-slate-200 text-left">
+          <div className="mt-4 pt-4 border-t border-slate-200 text-left space-y-2">
              <p className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-lg border border-rose-100">{currentContent.legalRef}</p>
+             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Live-updated statutory database (BNS 2023, PWDVA 2005, IT Act, Maternity Benefit Act) — not static, versioned against MHA/eGazette notifications.</p>
           </div>
         </div>
       </div>

@@ -102,12 +102,12 @@ const allStatesData = [
   { id: 'AN', name: 'Andaman & Nicobar Islands', status: 'Good', metric: 'Low Domestic Crime Index', special: 'Strong island community protection networks.', ngos: ['Prani Daya Sangh', 'Island Women Welfare'] },
   { id: 'AP', name: 'Andhra Pradesh', status: 'Moderate', metric: 'Disha App Integration Active', special: 'Dedicated Mahila Police Stations in key districts.', ngos: ['SNEHA', 'Vasavya Mahila Mandali', 'HELP NGO'] },
   { id: 'AR', name: 'Arunachal Pradesh', status: 'Good', metric: 'Tribal Council Mediation', special: 'High indigenous community support structures for women.', ngos: ['Arunachal Women Welfare Society (AWWS)'] },
-  { id: 'AS', name: 'Assam', status: 'Action Required', metric: 'High 498A Reporting Rate', special: 'Urgent need for swift FIR translation and legal support.', ngos: ['North East Network (NEN) Assam', 'SITA'] },
-  { id: 'BR', name: 'Bihar', status: 'Action Required', metric: 'High Legal Literacy Gap', special: 'Requires voice-first vernacular FIR generation.', ngos: ['Nidan', 'SEWA Bihar', 'Mahila Housing Trust'] },
+  { id: 'AS', name: 'Assam', status: 'Action Required', metric: 'High Domestic Violence Reporting Rate', special: 'Urgent need for structured complaint-draft support and legal aid.', ngos: ['North East Network (NEN) Assam', 'SITA'] },
+  { id: 'BR', name: 'Bihar', status: 'Action Required', metric: 'High Legal Literacy Gap', special: 'Requires voice-first vernacular legal guidance and complaint drafting support.', ngos: ['Nidan', 'SEWA Bihar', 'Mahila Housing Trust'] },
   { id: 'CH', name: 'Chandigarh', status: 'Good', metric: 'Fast Police Response (112)', special: '100% digital filing adoption at urban desks.', ngos: ['Gauri Trust', 'Sakshi'] },
   { id: 'CG', name: 'Chhattisgarh', status: 'Moderate', metric: 'Anganwadi Network Reach', special: 'Strong rural women self-help group movement.', ngos: ['Sangata', 'Choupal NGO', 'Samerth'] },
   { id: 'DN', name: 'Dadra & Nagar Haveli and Daman & Diu', status: 'Moderate', metric: 'Industrial Safety Taskforce', special: 'Protects migrant women workers in factory belts.', ngos: ['Rural Women Care'] },
-  { id: 'DL', name: 'Delhi (NCT)', status: 'Action Required', metric: 'High Incident Density', special: 'Demands zero-latency acoustic telemetry (SafeMode).', ngos: ['Jagori', 'Breakthrough India', 'Action India'] },
+  { id: 'DL', name: 'Delhi (NCT)', status: 'Action Required', metric: 'High Incident Density', special: 'Demands privacy-first silent SOS and rapid legal-aid pathways.', ngos: ['Jagori', 'Breakthrough India', 'Action India'] },
   { id: 'GA', name: 'Goa', status: 'Good', metric: 'High Legal Awareness Index', special: 'Strong civil court accessibility and pro-bono network.', ngos: ['Bailancho Saad', 'ARZ Goa'] },
   { id: 'GJ', name: 'Gujarat', status: 'Good', metric: 'Pioneers of Cooperative Movement', special: 'Grassroots economic power driven by female cooperatives (Amul, SEWA).', ngos: ['SEWA Bharat (Gujarat)', 'AWAG', 'Saath Livelihoods'] },
   { id: 'HR', name: 'Haryana', status: 'Action Required', metric: 'Persistent Gender Ratio Deficit', special: 'Focusing on legal protection and shelter access.', ngos: ['Jagriti Women Cell', 'SMS Foundation'] },
@@ -118,7 +118,7 @@ const allStatesData = [
   { id: 'KL', name: 'Kerala', status: 'Good', metric: '92%+ Female Literacy Rate', special: 'National leader in female workforce participation in healthcare & education.', ngos: ['Kudumbashree', 'Sakhi Resource Centre', 'Thanal'] },
   { id: 'LA', name: 'Ladakh', status: 'Good', metric: 'Low Crime Density', special: 'Strong Buddhist & local council mediation networks.', ngos: ['Ladakh Women Alliance'] },
   { id: 'LD', name: 'Lakshadweep', status: 'Good', metric: 'Lowest Crime Rate', special: 'Matrilineal social structures in select island groups.', ngos: ['Island Mahila Samiti'] },
-  { id: 'MP', name: 'Madhya Pradesh', status: 'Action Required', metric: 'High PWDVA Backlog', special: 'Requires rapid FIR drafting to clear SHO bottlenecks.', ngos: ['Sangarsh', 'Aarambh', 'Prashanti'] },
+  { id: 'MP', name: 'Madhya Pradesh', status: 'Action Required', metric: 'High PWDVA Backlog', special: 'Requires rapid structured complaint drafting to reduce police bottlenecks and under-recording.', ngos: ['Sangarsh', 'Aarambh', 'Prashanti'] },
   { id: 'MH', name: 'Maharashtra', status: 'Moderate', metric: 'Highest Women Entrepreneurs', special: 'Driven by Mumbai/Pune hubs and strong rural MAVIM SHGs.', ngos: ['Snehalaya', 'Annapurna Pariwar', 'MAVIM'] },
   { id: 'MN', name: 'Manipur', status: 'Action Required', metric: 'Community Resistance Networks', special: 'Driven by Meira Paibi (women torchbearers) for peace.', ngos: ['NEN Manipur', 'Wide Angle'] },
   { id: 'ML', name: 'Meghalaya', status: 'Good', metric: 'Matrilineal Cultural Heritage', special: 'Women hold lineage rights and strong land protection.', ngos: ['North East Network', 'CSWO Meghalaya'] },
@@ -126,13 +126,13 @@ const allStatesData = [
   { id: 'NL', name: 'Nagaland', status: 'Good', metric: 'Lowest Recorded NCRB Violent Crime', special: 'Strong emphasis on community and tribal women councils.', ngos: ['North East Network (NEN)', 'Eleutheros Society'] },
   { id: 'OR', name: 'Odisha', status: 'Moderate', metric: 'Mission Shakti SHG Power', special: '70 Lakh+ women organized in micro-livelihood groups.', ngos: ['RUCHI', 'NAWO Odisha', 'CCWD'] },
   { id: 'PY', name: 'Puducherry', status: 'Good', metric: 'High Institutional Care', special: 'Fast access to legal aid clinics and healthcare.', ngos: ['Trust for Youth & Child Care'] },
-  { id: 'PB', name: 'Punjab', status: 'Moderate', metric: 'High NRI Marriage Legal Disputes', special: 'Focus on legal awareness regarding desertion & IPC 498A.', ngos: ['Sakshi Punjab', 'PINGALWARA Women Wing'] },
-  { id: 'RJ', name: 'Rajasthan', status: 'Action Required', metric: 'High Rural Literacy Gap', special: 'Requires voice-first BolDo Scribe for non-literate victims.', ngos: ['Bunkar Vikas Sansthan', 'Seva Mandir', 'Matrix'] },
+  { id: 'PB', name: 'Punjab', status: 'Moderate', metric: 'High NRI Marriage Legal Disputes', special: 'Focus on legal awareness regarding desertion, BNS Sections 85–86, and PWDVA remedies.', ngos: ['Sakshi Punjab', 'PINGALWARA Women Wing'] },
+  { id: 'RJ', name: 'Rajasthan', status: 'Action Required', metric: 'High Rural Literacy Gap', special: 'Requires voice-first complaint-draft support for non-literate victims.', ngos: ['Bunkar Vikas Sansthan', 'Seva Mandir', 'Matrix'] },
   { id: 'SK', name: 'Sikkim', status: 'Good', metric: 'Safe Work Environment', special: 'High women participation in government & hospitality.', ngos: ['Sikkim Women Council'] },
   { id: 'TN', name: 'Tamil Nadu', status: 'Good', metric: 'All-Women Police Stations (AWPS)', special: 'Pioneered dedicated female police desks in every district.', ngos: ['AWD NGO', 'PCVC Tamil Nadu', 'SNEHA Chennai'] },
   { id: 'TS', name: 'Telangana', status: 'Moderate', metric: 'SHE Teams Operational', special: 'Advanced cybercrime & street harassment response units.', ngos: ['Bhumi Telangana', 'Prajwala'] },
   { id: 'TR', name: 'Tripura', status: 'Moderate', metric: 'Rural Livelihood Expansion', special: 'Handloom & bamboo craft self-help groups.', ngos: ['Tripura Women Commission'] },
-  { id: 'UP', name: 'Uttar Pradesh', status: 'Action Required', metric: 'Highest Volume of Cruelty Cases', special: 'Urgent need for automated FIR generation and NCW routing.', ngos: ['Vanangana', 'Aali UP', 'Red Brigade Lucknow'] },
+  { id: 'UP', name: 'Uttar Pradesh', status: 'Action Required', metric: 'Highest Volume of Cruelty Cases', special: 'Urgent need for structured complaint drafting and NCW routing.', ngos: ['Vanangana', 'Aali UP', 'Red Brigade Lucknow'] },
   { id: 'UK', name: 'Uttarakhand', status: 'Good', metric: 'Eco-Livelihood Leaders', special: 'Pioneers of environmental & micro-enterprise SHGs.', ngos: ['CHIRAG Uttarakhand', 'SBMA'] },
   { id: 'WB', name: 'West Bengal', status: 'Action Required', metric: 'High Trafficking Sensitivity', special: 'Focus on immediate safe shelter & legal documentation.', ngos: ['Swayam Kolkata', 'Sanlaap'] },
 ];
@@ -534,9 +534,9 @@ export default function MyStory() {
 
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold mb-4">3</div>
-            <h3 className="font-bold text-slate-900 text-base mb-2">Police Desk Apathy & FIR Rejection</h3>
+            <h3 className="font-bold text-slate-900 text-base mb-2">Police Desk Apathy & Complaint Under-Recording</h3>
             <p className="text-slate-600 text-xs leading-relaxed">
-              Police stations frequently reject unformatted verbal complaints. BolDo Scribe automatically injects IPC 498A / PWDVA sections, generating a court-ready PDF that Station Officers cannot dismiss.
+              Police stations frequently reject or under-record unformatted verbal complaints. BolDo Scribe prepares a structured complaint draft / pre-FIR statement with BNS 85–86 and PWDVA references, making officer intake easier and clearer.
             </p>
           </div>
 
@@ -558,9 +558,9 @@ export default function MyStory() {
 
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
             <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold mb-4">6</div>
-            <h3 className="font-bold text-slate-900 text-base mb-2">Discreet Acoustic Telemetry (SafeMode)</h3>
+            <h3 className="font-bold text-slate-900 text-base mb-2">User-Triggered Silent SOS (SafeMode)</h3>
             <p className="text-slate-600 text-xs leading-relaxed">
-              Pressing an obvious panic button in a volatile moment can escalate danger. SafeMode uses background WebSockets to stream acoustic telemetry and dispatch emergency GPS packets silently.
+              In a volatile moment, a deliberate, opt-in silent SOS is safer and more defensible than always-on background listening. SafeMode is framed as an explicit activation flow with minimal retention and clear consent.
             </p>
           </div>
 

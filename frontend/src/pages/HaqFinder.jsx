@@ -47,17 +47,18 @@ export default function HaqFinder() {
   const content = {
     en: {
       title: "HaqFinder Engine",
-      subtitle: "Discover statutory legal rights and welfare schemes through natural conversation.",
+      subtitle: "Ask about women’s legal rights, safety protections, and welfare schemes in plain language.",
       rightsHeading: "Core Statutory Rights & Frameworks",
       localHeading: "Crisis Resolution Nodes",
       botTitle: "Saheli Legal AI",
-      placeholder: "Tap mic or type your grievance...",
+      placeholder: "Ask about a women’s rights issue, complaint, or local aid pathway...",
       listeningPlaceholder: "Listening... tap the mic again to stop",
       transcribingPlaceholder: "Transcribing your voice...",
       listenText: "Listen",
       draftBtn: "Draft Legal Grievance",
       errorMsg: "Network error connecting to the backend server.",
       voiceErrorMsg: "Couldn't access the microphone. Please check your browser's mic permission.",
+      scopeMessage: "I can help with women’s legal rights, safety protections, complaint drafting, and local aid pathways under Indian law. Ask about BNS 2023, PWDVA 2005, POSH, maternity rights, dowry, legal aid, or police complaint steps — not unrelated general chat.",
       cards: [
         { title: "Protection from Domestic Violence", desc: "Right to safe housing, protection orders, and medical aid.", code: "PWDVA Act, 2005" },
         { title: "Right to Equal Remuneration", desc: "Constitutional mandate guaranteeing equal pay for identical work profiles.", code: "Equal Remuneration Act" },
@@ -149,11 +150,29 @@ export default function HaqFinder() {
 
   const currentContent = content[lang] || content['en'];
 
+  const isRelevantSaheliQuery = (text) => {
+    const cleaned = text.toLowerCase().trim();
+    if (!cleaned || cleaned.length < 6) return false;
+
+    const blockedPatterns = [
+      /^hi\b/, /^hello\b/, /^hey\b/, /^good (morning|afternoon|evening)\b/,
+      /\bhow are you\b|\bwhat's up\b|\bhow was your day\b|\bwho are you\b|\bwhat is your name\b|\bcan you chat\b|\b tell me a joke\b/
+    ];
+
+    if (blockedPatterns.some(pattern => pattern.test(cleaned))) return false;
+
+    const allowedPatterns = [
+      'women', 'woman', 'domestic', 'violence', 'pwdva', 'bns', '498a', '85', '86', 'legal', 'law', 'rights', 'police', 'complaint', 'grievance', 'dowry', 'maternity', 'posh', 'harassment', 'shelter', 'aid', 'abortion', 'maintenance', 'property', 'inheritance', 'safety', 'help', 'sakhi', 'ngo', 'helpline', 'support', 'e-fir', 'zero fir', 'police station', 'legal services'
+    ];
+
+    return allowedPatterns.some(keyword => cleaned.includes(keyword));
+  };
+
   useEffect(() => {
-    let initialGreeting = "Welcome to Saheli. How can I assist you with your legal rights or government schemes today?";
-    if (lang === 'hi') initialGreeting = "सहेली में आपका स्वागत है। मैं आज आपके कानूनी अधिकारों या योजनाओं में आपकी क्या सहायता कर सकती हूँ?";
-    if (lang === 'gu') initialGreeting = "સહેલીમાં આપનું સ્વાગત છે. હું આજે તમારા કાનૂની અધિકારો અથવા યોજનાઓ વિશે તમને શું મદદ કરી શકું?";
-    if (lang === 'mr') initialGreeting = "सहेलीमध्ये आपले स्वागत आहे. मी आज तुमच्या कायदेशीर अधिकारांबद्दल किंवा योजनांबद्दल काय मदत करू शकते?";
+    let initialGreeting = "Welcome to Saheli HaqFinder. Ask about women’s legal rights, safety protections, complaint drafting, or local aid pathways.";
+    if (lang === 'hi') initialGreeting = "सहेली हकफ़ाइंडर में आपका स्वागत है। महिलाओं के कानूनी अधिकार, सुरक्षा, शिकायत तैयार करने, या स्थानीय सहायता विकल्पों के बारे में पूछें।";
+    if (lang === 'gu') initialGreeting = "સહેલી હકફાઇન્ડરBienvenue. મહિલાઓના કાનૂની અધિકારો, સુરક્ષા, ફરિયાદ ડ્રાફ્ટિંગ અથવા સ્થાનિક સહાય વિશે પૂછો.";
+    if (lang === 'mr') initialGreeting = "सहेली हकफाइंडरमध्ये आपले स्वागत आहे. महिलांच्या कायदेशीर हक्क, सुरक्षा, तक्रार मसुदा किंवा स्थानिक मदत याबद्दल विचारा.";
 
     if (messages.length === 0) {
       setMessages([{ id: Date.now(), text: initialGreeting, isBot: true, hasAction: false }]);
@@ -241,12 +260,23 @@ export default function HaqFinder() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userText = input;
+    const userText = input.trim();
     const userMsg = { id: Date.now(), text: userText, isBot: false };
 
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
+
+    if (!isRelevantSaheliQuery(userText)) {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: currentContent.scopeMessage,
+        isBot: true,
+        hasAction: false
+      }]);
+      setIsTyping(false);
+      return;
+    }
 
     try {
       const chatHistory = messages.map(msg => ({

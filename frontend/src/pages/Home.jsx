@@ -26,7 +26,7 @@ export default function Home() {
       pillarSub: "Five Pillars of Protection",
       pillarContext: "Saheli combines distress detection, welfare matching, legal narrative generation, and community into one system. Here's how we protect you at every step.",
       aiTitle: "AI That Listens. Systems That Act.",
-      aiText: "The system is broken for those 70% of women who need help most. Saheli bridges the gap—using voice AI to detect distress, match legal entitlements, and generate court-ready complaints. Because every woman deserves justice, not just awareness.",
+      aiText: "The system is broken for those 70% of women who need help most. Saheli bridges the gap—using voice AI to detect distress, map safety rights, and generate structured complaint drafts for safer police intake and legal follow-up. Because every woman deserves justice, not just awareness.",
       builtByLabel: "Built by women technologists, for women's safety.",
       waitlistTitle: "Become a Voice for Change",
       waitlistSub: "Be part of the first community making safety actionable, not just aspirational.",
@@ -302,9 +302,9 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 lg:gap-8 mb-6">
-            <BentoCard num="#1" onClick={() => navigate('/safemode')} icon={<ShieldAlert size={22} />} title="SafeMode OS" benefit="Detects distress signals in real-time" desc="Continuous background audio parsing node. Auto-dispatches tracking location parameters instantly." />
-            <BentoCard num="#2" onClick={() => navigate('/haqfinder')} icon={<FileText size={22} />} title="HaqFinder Engine" benefit="Matches your legal entitlements" desc="A voice-activated multi-jurisdictional query tool searching central welfare programs." />
-            <BentoCard num="#3" onClick={() => navigate('/boldo')} icon={<Mic size={22} />} title="BolDo Scribe" benefit="Generates court-ready text scripts" desc="Transforms real-time verbal testimonies into structurally standardized police grievance templates." />
+            <BentoCard num="#1" onClick={() => navigate('/safemode')} icon={<ShieldAlert size={22} />} title="SafeMode OS" benefit="User-triggered silent SOS" desc="Opt-in distress flow with zero permanent audio logs and no background surveillance claim; designed for explicit activation and clear consent." />
+            <BentoCard num="#2" onClick={() => navigate('/haqfinder')} icon={<FileText size={22} />} title="HaqFinder Engine" benefit="Matches your legal entitlements" desc="A voice-led guide to women’s rights, BNS/PWDVA pathways, and local Sakhi/legal aid support." />
+            <BentoCard num="#3" onClick={() => navigate('/boldo')} icon={<Mic size={22} />} title="BolDo Scribe" benefit="Generates structured complaint drafts" desc="Turns testimony into a structured complaint draft / pre-FIR statement that aids safer intake and e-FIR routing where available." />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">

@@ -30,21 +30,21 @@ export default function SafeMode() {
 
   const labels = {
     en: {
-      title: "SafeMode OS", subtitle: "Continuous Acoustic Telemetry & Threat Recognition",
-      badgeStandby: "System Standby", badgeActive: "Streaming Live",
-      orbTap: "TAP TO ARM SYSTEM", orbListening: "ACOUSTIC ARRAY ACTIVE",
-      logReady: "SYSTEM INITIALIZED // Awaiting background telemetry loop...",
-      logPaused: "⚠ PAUSED // Audio capture streams suspended safely.",
-      logCritical: "🚨 CRITICAL SOS // Incident data packet and live coordinates successfully transmitted.",
+      title: "SafeMode OS", subtitle: "User-triggered silent SOS + privacy-first distress flow",
+      badgeStandby: "System Standby", badgeActive: "Ready to Trigger",
+      orbTap: "TAP TO ACTIVATE SOS", orbListening: "SILENT SOS READY",
+      logReady: "SYSTEM INITIALIZED // Awaiting explicit user-triggered distress activation...",
+      logPaused: "⚠ PAUSED // Audio capture suspended safely. No permanent logs retained.",
+      logCritical: "🚨 SOS TRIGGERED // Distress packet and contact escalation simulated for demo.",
       logReconnecting: "⚠ Connection dropped. Attempting to reconnect...",
-      logReconnectFailed: "✕ Could not reconnect. Tap the orb to restart telemetry.",
-      contactsTitle: "Emergency Nodes", contactsSub: "Outbound delivery endpoints for distress payloads.",
-      btnText: "TEST SOS PANIC BROADCAST",
-      overlayTitle: "SOS Broadcast Dispatched",
-      overlaySub: "Emergency coordinate packets pushed to your WhatsApp notification array.",
-      autoAlertTitle: "Distress Phrase Detected",
-      autoAlertSub: "Okay — emergency contacts alerted.",
-      disclaimer: "Demo mode: contacts and alerts are simulated for this prototype. Automatic live SMS/WhatsApp dispatch is planned for the next build."
+      logReconnectFailed: "✕ Could not reconnect. Tap the orb to restart the SOS flow.",
+      contactsTitle: "Emergency Nodes", contactsSub: "Confirmed contacts for a triggered distress packet.",
+      btnText: "TEST SILENT SOS",
+      overlayTitle: "SOS Triggered",
+      overlaySub: "A user-activated distress flow is ready to send; in this prototype, the notification is simulated.",
+      autoAlertTitle: "Triggered Distress Flow",
+      autoAlertSub: "Silent SOS initiated — demo alert only.",
+      disclaimer: "Demo mode: this prototype demonstrates an opt-in silent SOS workflow, not continuous background audio surveillance. Zero permanent audio logs; in-memory processing only."
     },
     hi: {
       title: "सेफमोड ओएस", subtitle: "सतत ध्वनिक निगरानी और खतरा पहचान प्रणाली",
