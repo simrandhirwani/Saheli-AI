@@ -218,6 +218,56 @@ async def process_haqfinder_chat(request: ChatRequest):
             max_tokens=1024
         )
         bot_reply = completion.choices[0].message.content
+        # If user requested a non-English language but the model replied in Latin/English
+        # attempt a translation step so the frontend always receives text in the
+        # requested language (best-effort). We detect script presence for common
+        # target scripts (Devanagari for Hindi/Marathi, Gujarati for Gujarati).
+        def _looks_like_target_language(text: str, lang_code: str) -> bool:
+            if not text:
+                return False
+            # Devanagari block: \u0900-\u097F (Hindi, Marathi)
+            if lang_code in ("hi", "mr"):
+                return bool(re.search(r"[\u0900-\u097F]", text))
+            # Gujarati block: \u0A80-\u0AFF
+            if lang_code == "gu":
+                return bool(re.search(r"[\u0A80-\u0AFF]", text))
+            # English: basic Latin letters — treat any reply as acceptable for 'en'
+            if lang_code == "en":
+                return True
+            # Fallback: if unknown code, accept the original
+            return True
+
+        try:
+            import re
+            target_lang = request.language or "en"
+            if target_lang not in ("en", "hi", "mr", "gu"):
+                target_lang = "en"
+
+            if target_lang != "en" and not _looks_like_target_language(bot_reply, target_lang):
+                # Ask the model to translate the English reply into the requested language.
+                lang_map = {"en": "English", "hi": "Hindi", "mr": "Marathi", "gu": "Gujarati"}
+                trans_prompt = (
+                    f"You are a concise, literal translator. Translate the following text into {lang_map.get(target_lang, 'English')}. "
+                    f"Preserve legal tone and meaning; output only the translated text without explanation.\n\n{bot_reply}"
+                )
+                translation = groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful translator."},
+                        {"role": "user", "content": trans_prompt}
+                    ],
+                    temperature=0.0,
+                    max_tokens=1024
+                )
+                translated_text = translation.choices[0].message.content.strip()
+                if translated_text:
+                    bot_reply = translated_text
+
+        except Exception as e:
+            # Don't fail the whole request just because translation failed — return
+            # the original English reply as a graceful fallback and log the error.
+            print(f"HaqFinder translation fallback failed: {e}")
+
         return {"reply": bot_reply}
     except Exception as e:
         print(f"HaqFinder Chat Core Failure: {e}")
