@@ -266,11 +266,17 @@ async def generate_boldo_draft(request: BoldoDraftRequest):
             "survivor's own spoken account. Use only the specific facts, incidents, and dates she "
             "actually mentioned — never invent details she did not say. Structure it as a formal "
             "letter addressed 'To, The Station House Officer (SHO), [Jurisdiction Police Station]', "
-            "citing IPC Section 498A (Domestic Cruelty) and the Protection of Women from Domestic "
-            f"Violence Act, 2005 (PWDVA) where relevant. Write in first person as the complainant, "
-            f"{effective_name}. Respond with ONLY the letter text — no preamble, no explanation, no "
-            f"markdown formatting. Write it in the language matching this code: '{request.language}' "
-            "(en=English, hi=Hindi, mr=Marathi, gu=Gujarati)."
+            "and cite current Indian law provisions that fit the facts described. Prefer the "
+            "Bharatiya Nyaya Sanhita (BNS) over old IPC references, and select the most relevant "
+            "provisions for the conduct described, such as BNS Sections 85 and 86 for cruelty by "
+            "husband/relatives where applicable, and the Protection of Women from Domestic "
+            "Violence Act, 2005 (PWDVA) where relevant. If the facts involve other current offenses, "
+            "choose the most appropriate BNS/BNSS/PWDVA provisions based on the account and mention "
+            "them clearly in the letter. Do not use IPC sections or outdated legal references. "
+            f"Write in first person as the complainant, {effective_name}. Respond with ONLY the "
+            f"letter text — no preamble, no explanation, no markdown formatting. Write it in the "
+            f"language matching this code: '{request.language}' (en=English, hi=Hindi, mr=Marathi, "
+            f"gu=Gujarati)."
         )
 
         completion = groq_client.chat.completions.create(
