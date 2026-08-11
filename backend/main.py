@@ -1,6 +1,7 @@
 import io
 import os
 import datetime
+import re
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +28,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+groq_client = None
+if GROQ_API_KEY:
+    try:
+        groq_client = Groq(api_key=GROQ_API_KEY)
+    except Exception as e:
+        print(f"Warning: failed to initialize Groq client: {e}")
+        groq_client = None
 DB_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
@@ -78,6 +86,12 @@ def transcribe_audio_bytes(audio_bytes: bytes, lang_hint: Optional[str]) -> str:
         "response_format": "text",
         "temperature": 0.0,
     }
+    if not groq_client:
+        # No Groq client available (dev mode) — return empty so frontend knows
+        # there was no transcription. In a real environment the Groq client
+        # performs Whisper transcription.
+        return ""
+
     if lang_hint in SUPPORTED_WHISPER_LANGS:
         kwargs["language"] = lang_hint
 
@@ -206,69 +220,107 @@ async def process_haqfinder_chat(request: ChatRequest):
             f"If the user describes an actionable grievance or violation, explicitly offer "
             f"to draft a 'court-ready formal grievance letter' for them at the end of your response."
         )
+
         formatted_messages = [{"role": "system", "content": system_prompt}]
         for msg in request.history:
             formatted_messages.append({"role": msg.role, "content": msg.content})
         formatted_messages.append({"role": "user", "content": request.message})
 
+        # If Groq client not present, return a short localized demo reply for testing
+        if not groq_client:
+            demo_map = {
+                "en": "This is a demo reply because the backend LLM key is not configured.",
+                "hi": "यह एक डेमो उत्तर है क्योंकि बैकएंड LLM कुंजी कॉन्फ़िगर नहीं है।",
+                "gu": "આ ડેમો જવાબ છે કારણ કે બેકએન્ડ LLM કી કન્ફિગર થતી નથી.",
+                "mr": "हे एक डेमो उत्तर आहे कारण बॅकएंड LLM की कॉन्फिगर केलेली नाही."
+            }
+            reply_text = demo_map.get((request.language or "en")[:2], demo_map["en"])
+            return {"reply": reply_text, "language_ok": True, "translated": False, "original_preview": reply_text}
+
         completion = groq_client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=formatted_messages,
             temperature=0.5,
-            max_tokens=1024
+            max_tokens=1024,
         )
         bot_reply = completion.choices[0].message.content
-        # If user requested a non-English language but the model replied in Latin/English
-        # attempt a translation step so the frontend always receives text in the
-        # requested language (best-effort). We detect script presence for common
-        # target scripts (Devanagari for Hindi/Marathi, Gujarati for Gujarati).
+
+        # detect Indic script presence for language verification
         def _looks_like_target_language(text: str, lang_code: str) -> bool:
             if not text:
                 return False
-            # Devanagari block: \u0900-\u097F (Hindi, Marathi)
             if lang_code in ("hi", "mr"):
                 return bool(re.search(r"[\u0900-\u097F]", text))
-            # Gujarati block: \u0A80-\u0AFF
             if lang_code == "gu":
                 return bool(re.search(r"[\u0A80-\u0AFF]", text))
-            # English: basic Latin letters — treat any reply as acceptable for 'en'
             if lang_code == "en":
                 return True
-            # Fallback: if unknown code, accept the original
             return True
 
-        try:
-            import re
-            target_lang = request.language or "en"
-            if target_lang not in ("en", "hi", "mr", "gu"):
-                target_lang = "en"
+        original_reply = bot_reply
+        target_lang = (request.language or "en")[:2]
+        if target_lang not in ("en", "hi", "mr", "gu"):
+            target_lang = "en"
 
-            if target_lang != "en" and not _looks_like_target_language(bot_reply, target_lang):
-                # Ask the model to translate the English reply into the requested language.
+        language_ok = _looks_like_target_language(original_reply, target_lang)
+        translated = False
+
+        # Try translate then regenerate if necessary
+        if target_lang != "en" and not language_ok:
+            try:
                 lang_map = {"en": "English", "hi": "Hindi", "mr": "Marathi", "gu": "Gujarati"}
                 trans_prompt = (
-                    f"You are a concise, literal translator. Translate the following text into {lang_map.get(target_lang, 'English')}. "
-                    f"Preserve legal tone and meaning; output only the translated text without explanation.\n\n{bot_reply}"
+                    f"Translate the following text into {lang_map.get(target_lang, 'English')}. "
+                    f"Preserve legal meaning and tone. Output only the translated text without explanation.\n\n{original_reply}"
                 )
                 translation = groq_client.chat.completions.create(
                     model="llama-3.1-8b-instant",
                     messages=[
-                        {"role": "system", "content": "You are a helpful translator."},
-                        {"role": "user", "content": trans_prompt}
+                        {"role": "system", "content": "You are a concise, literal translator focused on preserving legal tone."},
+                        {"role": "user", "content": trans_prompt},
                     ],
                     temperature=0.0,
-                    max_tokens=1024
+                    max_tokens=1024,
                 )
                 translated_text = translation.choices[0].message.content.strip()
                 if translated_text:
                     bot_reply = translated_text
+                    translated = True
+                    language_ok = _looks_like_target_language(bot_reply, target_lang)
+            except Exception as e:
+                print(f"HaqFinder translation attempt failed: {e}")
 
-        except Exception as e:
-            # Don't fail the whole request just because translation failed — return
-            # the original English reply as a graceful fallback and log the error.
-            print(f"HaqFinder translation fallback failed: {e}")
+        if target_lang != "en" and not language_ok:
+            try:
+                lang_map = {"en": "English", "hi": "Hindi", "mr": "Marathi", "gu": "Gujarati"}
+                regen_system = (
+                    f"You are Saheli, an AI legal assistant. Answer the user's question in {lang_map.get(target_lang, 'English')} only. "
+                    "Keep tone empathetic, legally accurate, concise. Do not include extra explanations."
+                )
+                regen_msgs = [{"role": "system", "content": regen_system}]
+                for msg in request.history:
+                    regen_msgs.append({"role": msg.role, "content": msg.content})
+                regen_msgs.append({"role": "user", "content": request.message})
 
-        return {"reply": bot_reply}
+                regen_completion = groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=regen_msgs,
+                    temperature=0.3,
+                    max_tokens=1024,
+                )
+                regen_reply = regen_completion.choices[0].message.content.strip()
+                if regen_reply:
+                    bot_reply = regen_reply
+                    language_ok = _looks_like_target_language(bot_reply, target_lang)
+            except Exception as e:
+                print(f"HaqFinder regeneration attempt failed: {e}")
+
+        return {
+            "reply": bot_reply,
+            "language_ok": bool(language_ok),
+            "translated": bool(translated),
+            "original_preview": original_reply[:400],
+        }
     except Exception as e:
         print(f"HaqFinder Chat Core Failure: {e}")
         raise HTTPException(status_code=500, detail="Internal LLM Processing Error")

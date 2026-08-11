@@ -299,12 +299,22 @@ export default function HaqFinder() {
       if (!response.ok) throw new Error("Backend API Error");
 
       const data = await response.json();
-      const botReply = data.reply;
+      // Backend now returns: { reply, language_ok, translated, original_preview }
+      let botReply = data.reply || "";
+      const languageOk = (typeof data.language_ok === 'boolean') ? data.language_ok : true;
+      const translated = !!data.translated;
+      const originalPreview = data.original_preview || null;
+
+      // If server couldn't produce a reply in the requested script/language,
+      // fall back to the original English preview so the user always sees an answer.
+      if (!languageOk && originalPreview && !botReply) {
+        botReply = originalPreview;
+      }
 
       const suggestsDrafting = botReply.toLowerCase().includes('draft') ||
-                               botReply.toLowerCase().includes('मसौदा') ||
-                               botReply.toLowerCase().includes('ડ્રાફ્ટ') ||
-                               botReply.toLowerCase().includes('मसुदा');
+               botReply.toLowerCase().includes('मसौदा') ||
+               botReply.toLowerCase().includes('ડ્રાફ્ટ') ||
+               botReply.toLowerCase().includes('मसुदा');
 
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
